@@ -66,7 +66,7 @@ speechToText.SpeechRecognized += async (_, e) =>
         try
         {
             await textToSpeech.SpeakAsync(
-                    $"Ho sentito la tua voce. La trascrizione è: {e.Text}",
+                    options.FormatTtsEcho(e.Text),
                     cts.Token)
                 .ConfigureAwait(false);
         }

@@ -1,0 +1,20 @@
+{
+  "JarvisNet": {
+    "Audio": {
+      "SampleRate": 16000,
+      "OutputDeviceNumber": -1,
+      "InputMode": "Vad",
+      "VadSilenceMs": 800,
+      "PiperVoiceKey": "es_ES-sharvard-medium",
+      "PiperModelPath": "tts/es_ES-sharvard-medium.onnx",
+      "PiperExecutablePath": "",
+      "PiperWorkingDirectory": "",
+      "TtsEchoTemplate": "He escuchado tu voz. La transcripción es: {0}",
+      "SherpaEncoderPath": "stt/es-kroko/encoder.onnx",
+      "SherpaDecoderPath": "stt/es-kroko/decoder.onnx",
+      "SherpaJoinerPath": "stt/es-kroko/joiner.onnx",
+      "SherpaTokensPath": "stt/es-kroko/tokens.txt",
+      "SherpaModelType": "zipformer2"
+    }
+  }
+}

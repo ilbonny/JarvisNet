@@ -83,26 +83,36 @@ dotnet test JarvisNet.slnx
 Modelli ONNX e Piper condivisi (root repo, usati da TestApp e host reali):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tests/JarvisNet.Audio.TestApp/scripts/Download-Models.ps1
-powershell -ExecutionPolicy Bypass -File tests/JarvisNet.Audio.TestApp/scripts/Download-Piper.ps1
+powershell -ExecutionPolicy Bypass -File scripts/Download-Models.ps1
+powershell -ExecutionPolicy Bypass -File scripts/Download-Models.ps1 -Locale es
+powershell -ExecutionPolicy Bypass -File scripts/Download-Piper.ps1
 ```
 
-Config audio condivisa: [`config/jarvisnet.audio.json`](config/jarvisnet.audio.json) (caricata con `AddJarvisNetSharedAudioConfiguration`).
+Config audio condivisa (caricata con `AddJarvisNetSharedAudioConfiguration`):
 
-Voce TTS italiana (`JarvisNet:Audio:PiperVoiceKey`):
+| Profilo | File |
+|---------|------|
+| Italiano (default) | [`config/jarvisnet.audio.json`](config/jarvisnet.audio.json) |
+| Spagnolo (Spagna) | [`config/jarvisnet.audio.es.json`](config/jarvisnet.audio.es.json) |
 
-| Chiave | Voce |
-|--------|------|
-| `it_IT-paola-medium` | donna (default) |
-| `it_IT-riccardo-x_low` | uomo |
-| `it_IT-serena-medium` | donna (alternativa) |
+Per il TestApp in spagnolo: `$env:JARVISNET_AUDIO_PROFILE="es"` prima di `dotnet run`, oppure passa il profilo a `AddJarvisNetSharedAudioConfiguration(..., profile: "es")`.
 
-Esempio voce maschile in `config/jarvisnet.audio.json`: `"PiperVoiceKey": "it_IT-riccardo-x_low"`. Scarica i file con `Download-Models.ps1`.
+Voce TTS (`JarvisNet:Audio:PiperVoiceKey`):
+
+| Chiave | Lingua | Voce |
+|--------|--------|------|
+| `it_IT-paola-medium` | IT | donna (default) |
+| `it_IT-riccardo-x_low` | IT | uomo |
+| `es_ES-sharvard-medium` | ES (Spagna) | donna (speaker 1, consigliata) |
+| `es_ES-mls_10246-low` | ES | donna (bassa qualità) |
+| `es_AR-daniela-high` | ES (Argentina) | donna, alta qualità |
+| `es_ES-carlfm-x_low` | ES | uomo |
 
 Test vocale interattivo:
 
 ```powershell
 dotnet run --project tests/JarvisNet.Audio.TestApp/JarvisNet.Audio.TestApp.csproj
+$env:JARVISNET_AUDIO_PROFILE="es"; dotnet run --project tests/JarvisNet.Audio.TestApp/JarvisNet.Audio.TestApp.csproj
 ```
 
 ## Struttura repository
@@ -111,6 +121,7 @@ dotnet run --project tests/JarvisNet.Audio.TestApp/JarvisNet.Audio.TestApp.cspro
 JarvisNet/
 ├── JarvisNet.slnx
 ├── config/                    ← jarvisnet.audio.json (path modelli)
+├── scripts/                   ← Download-Models.ps1, Download-Piper.ps1
 ├── models/                    ← stt/, tts/ (gitignored, download script)
 ├── piper/                     ← runtime Piper (gitignored)
 ├── src/

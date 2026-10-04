@@ -9,6 +9,7 @@
       "PiperModelPath": "tts/it_IT-paola-medium.onnx",
       "PiperExecutablePath": "",
       "PiperWorkingDirectory": "",
+      "TtsEchoTemplate": "Ho sentito la tua voce. La trascrizione è: {0}",
       "SherpaEncoderPath": "stt/it-kroko/encoder.onnx",
       "SherpaDecoderPath": "stt/it-kroko/decoder.onnx",
       "SherpaJoinerPath": "stt/it-kroko/joiner.onnx",

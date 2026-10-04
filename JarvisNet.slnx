@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/scripts/">
+    <Project Path="scripts/PiperDownloadTool/PiperDownloadTool.csproj" />
+  </Folder>
   <Folder Name="/Tests/">
     <Project Path="tests/JarvisNet.Audio.IntegrationTests/JarvisNet.Audio.IntegrationTests.csproj" />
     <Project Path="tests/JarvisNet.Audio.TestApp/JarvisNet.Audio.TestApp.csproj" />

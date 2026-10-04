@@ -97,11 +97,13 @@ public sealed class PiperTtsService : ITextToSpeechService
 
             var model = await PiperVoiceModelLoader.LoadFromOnnxPathAsync(modelPath, cancellationToken)
                 .ConfigureAwait(false);
+            var speakerId = _options.ResolvePiperSpeakerId();
             _provider = new PiperProvider(new PiperConfiguration
             {
                 ExecutableLocation = executablePath,
                 WorkingDirectory = workingDirectory,
                 Model = model,
+                SpeakerId = speakerId,
             });
 
             _logger.LogInformation("Piper TTS initialized with model {ModelPath}.", modelPath);
