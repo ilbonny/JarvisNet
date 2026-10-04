@@ -1,5 +1,6 @@
 using JarvisNet.Audio.Abstractions;
 using JarvisNet.Audio.Events;
+using JarvisNet.Core.Enums;
 using JarvisNet.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
 
@@ -19,6 +20,8 @@ public sealed class JarvisNetOrchestrator
     private CancellationTokenSource? _sessionCts;
     private Task? _sessionTask;
     private bool _handlersAttached;
+    private JarvisState _currentState = JarvisState.Idle;
+    private bool _sessionActive;
 
     public JarvisNetOrchestrator(
         IAudioInputService audioInput,
@@ -37,6 +40,12 @@ public sealed class JarvisNetOrchestrator
     public event EventHandler<string>? UserTranscriptReceived;
 
     public event EventHandler<string>? AssistantResponseReceived;
+
+    public event EventHandler<string>? AssistantResponseChunk;
+
+    public event EventHandler<JarvisState>? StateChanged;
+
+    public event EventHandler<float>? AudioLevelChanged;
 
     public event EventHandler? ExitRequested;
 
@@ -77,12 +86,15 @@ public sealed class JarvisNetOrchestrator
         _sessionCts?.Dispose();
         _sessionCts = null;
         _sessionTask = null;
+        SetState(JarvisState.Idle);
     }
 
     private async Task RunSessionAsync(CancellationToken cancellationToken)
     {
         await _speechToText.StartSessionAsync(cancellationToken).ConfigureAwait(false);
         await _audioInput.StartAsync(cancellationToken).ConfigureAwait(false);
+        _sessionActive = true;
+        SetState(JarvisState.Listening);
 
         try
         {
@@ -94,8 +106,10 @@ public sealed class JarvisNetOrchestrator
         }
         finally
         {
+            _sessionActive = false;
             await _audioInput.StopAsync().ConfigureAwait(false);
             await _speechToText.StopSessionAsync(CancellationToken.None).ConfigureAwait(false);
+            SetState(JarvisState.Idle);
         }
     }
 
@@ -108,6 +122,10 @@ public sealed class JarvisNetOrchestrator
 
         _speechToText.SpeechRecognized += OnSpeechRecognized;
         _audioInput.AudioFrameAvailable += OnAudioFrameAvailable;
+        _audioInput.AudioLevelChanged += OnAudioLevelChanged;
+        _textToSpeech.SpeakingStarted += OnSpeakingStarted;
+        _textToSpeech.SpeakingCompleted += OnSpeakingCompleted;
+        _textToSpeech.PlaybackLevelChanged += OnPlaybackLevelChanged;
         _handlersAttached = true;
     }
 
@@ -120,7 +138,59 @@ public sealed class JarvisNetOrchestrator
 
         _speechToText.SpeechRecognized -= OnSpeechRecognized;
         _audioInput.AudioFrameAvailable -= OnAudioFrameAvailable;
+        _audioInput.AudioLevelChanged -= OnAudioLevelChanged;
+        _textToSpeech.SpeakingStarted -= OnSpeakingStarted;
+        _textToSpeech.SpeakingCompleted -= OnSpeakingCompleted;
+        _textToSpeech.PlaybackLevelChanged -= OnPlaybackLevelChanged;
         _handlersAttached = false;
+    }
+
+    private void OnAudioLevelChanged(object? sender, AudioLevelChangedEventArgs e)
+    {
+        if (_currentState == JarvisState.Speaking)
+        {
+            return;
+        }
+
+        AudioLevelChanged?.Invoke(this, e.Level);
+    }
+
+    private void OnPlaybackLevelChanged(object? sender, AudioLevelChangedEventArgs e)
+    {
+        if (_currentState != JarvisState.Speaking)
+        {
+            return;
+        }
+
+        AudioLevelChanged?.Invoke(this, e.Level);
+    }
+
+    private void OnSpeakingStarted(object? sender, EventArgs e)
+    {
+        SetState(JarvisState.Speaking);
+    }
+
+    private void OnSpeakingCompleted(object? sender, EventArgs e)
+    {
+        if (_sessionActive)
+        {
+            SetState(JarvisState.Listening);
+        }
+        else
+        {
+            SetState(JarvisState.Idle);
+        }
+    }
+
+    private void SetState(JarvisState state)
+    {
+        if (_currentState == state)
+        {
+            return;
+        }
+
+        _currentState = state;
+        StateChanged?.Invoke(this, state);
     }
 
     private void OnAudioFrameAvailable(object? sender, AudioFrameEventArgs e)
@@ -159,7 +229,13 @@ public sealed class JarvisNetOrchestrator
             UserTranscriptReceived?.Invoke(this, transcript);
             _logger.LogInformation("Utente: {Transcript}", transcript);
 
-            var reply = await _brain.SendAsync(transcript, CancellationToken.None).ConfigureAwait(false);
+            SetState(JarvisState.Thinking);
+
+            var reply = await _brain.SendStreamingAsync(
+                transcript,
+                chunk => AssistantResponseChunk?.Invoke(this, chunk),
+                CancellationToken.None).ConfigureAwait(false);
+
             AssistantResponseReceived?.Invoke(this, reply);
             _logger.LogInformation("JarvisNet: {Reply}", reply);
 
@@ -168,10 +244,18 @@ public sealed class JarvisNetOrchestrator
             {
                 await _textToSpeech.SpeakAsync(speechText, CancellationToken.None).ConfigureAwait(false);
             }
+            else if (_sessionActive)
+            {
+                SetState(JarvisState.Listening);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Errore durante il ciclo conversazionale.");
+            if (_sessionActive)
+            {
+                SetState(JarvisState.Listening);
+            }
         }
         finally
         {

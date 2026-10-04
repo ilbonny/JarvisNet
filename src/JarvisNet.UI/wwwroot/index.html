@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>J.A.R.V.I.S.</title>
+  <link rel="stylesheet" href="css/jarvis.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+</head>
+<body>
+  <header class="top-bar">
+    <span id="connection-status" class="status-badge status-disconnected">DISCONNECTED</span>
+    <div class="controls">
+      <button type="button" id="btn-start">Start</button>
+      <button type="button" id="btn-stop">Stop</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <canvas id="hud" width="640" height="640" aria-label="JARVIS HUD"></canvas>
+    <section id="chat-log" class="chat-log" aria-live="polite"></section>
+  </main>
+
+  <script src="js/jarvis-hud.js"></script>
+  <script src="js/jarvis-signalr.js"></script>
+</body>
+</html>

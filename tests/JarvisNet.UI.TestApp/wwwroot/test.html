@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JARVIS UI Test Controls</title>
+  <style>
+    body {
+      font-family: Consolas, monospace;
+      background: #020b18;
+      color: #00e5ff;
+      padding: 1.5rem;
+      max-width: 640px;
+    }
+    button { margin: 0.25rem; padding: 0.5rem 0.75rem; cursor: pointer; }
+    input[type="text"] { width: 100%; padding: 0.5rem; margin: 0.5rem 0; }
+    label { display: block; margin-top: 1rem; }
+    #status { margin-bottom: 1rem; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+</head>
+<body>
+  <h1>JARVIS HUD — Test Panel</h1>
+  <p id="status">Connecting…</p>
+  <p>
+    Hub URL: <input id="hub-url" type="text" value="http://localhost:5194/hub" />
+    <button type="button" id="btn-reconnect">Reconnect</button>
+  </p>
+
+  <section>
+    <h2>State</h2>
+    <button type="button" data-state="Idle">Idle</button>
+    <button type="button" data-state="Listening">Listening</button>
+    <button type="button" data-state="Thinking">Thinking</button>
+    <button type="button" data-state="Speaking">Speaking</button>
+  </section>
+
+  <section>
+    <label for="level">Audio level (0–1)</label>
+    <input id="level" type="range" min="0" max="1" step="0.01" value="0" />
+    <button type="button" id="btn-send-level">Send level</button>
+  </section>
+
+  <section>
+    <label for="user-text">USER transcript</label>
+    <input id="user-text" type="text" placeholder="Ciao Jarvis" />
+    <button type="button" id="btn-user">Send USER</button>
+  </section>
+
+  <section>
+    <label for="jarvis-text">JARVIS response (simulated stream)</label>
+    <input id="jarvis-text" type="text" placeholder="Buongiorno, signore." />
+    <button type="button" id="btn-jarvis">Send JARVIS (chunk + end)</button>
+  </section>
+
+  <p>Open <a href="http://localhost:5194" target="_blank" rel="noopener">JarvisNet.UI</a> to see the HUD.</p>
+
+  <script>
+    let connection = null;
+
+    async function connect() {
+      const status = document.getElementById("status");
+      const hubUrl = document.getElementById("hub-url").value.trim();
+      if (connection) {
+        await connection.stop();
+      }
+      connection = new signalR.HubConnectionBuilder()
+        .withUrl(hubUrl)
+        .withAutomaticReconnect()
+        .build();
+      try {
+        await connection.start();
+        status.textContent = "Connected to " + hubUrl;
+      } catch (e) {
+        status.textContent = "Failed: " + e.message;
+      }
+    }
+
+    document.getElementById("btn-reconnect").addEventListener("click", connect);
+
+    document.querySelectorAll("[data-state]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!connection) return;
+        await connection.invoke("SimulateState", btn.getAttribute("data-state"));
+      });
+    });
+
+    document.getElementById("btn-send-level").addEventListener("click", async () => {
+      if (!connection) return;
+      const v = parseFloat(document.getElementById("level").value);
+      await connection.invoke("SimulateAudioLevel", v);
+    });
+
+    document.getElementById("btn-user").addEventListener("click", async () => {
+      if (!connection) return;
+      const t = document.getElementById("user-text").value;
+      await connection.invoke("SimulateUserSpeech", t);
+    });
+
+    document.getElementById("btn-jarvis").addEventListener("click", async () => {
+      if (!connection) return;
+      const t = document.getElementById("jarvis-text").value;
+      await connection.invoke("SimulateJarvisChunk", t);
+      await connection.invoke("SimulateJarvisChunkEnd");
+    });
+
+    connect();
+  </script>
+</body>
+</html>

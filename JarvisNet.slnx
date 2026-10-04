@@ -11,12 +11,12 @@
     <Project Path="tests/JarvisNet.Engine.UnitTests/JarvisNet.Engine.UnitTests.csproj" />
     <Project Path="tests/JarvisNet.IntegrationTests/JarvisNet.IntegrationTests.csproj" />
     <Project Path="tests/JarvisNet.UnitTests/JarvisNet.UnitTests.csproj" />
+    <Project Path="tests/JarvisNet.UI.TestApp/JarvisNet.UI.TestApp.csproj" />
   </Folder>
   <Project Path="src/JarvisNet.Audio/JarvisNet.Audio.csproj" Id="6591c1df-7131-48a6-a69c-780a15149f22" />
   <Project Path="src/JarvisNet.Core/JarvisNet.Core.csproj" Id="05d62d4b-f7c7-4093-9b23-75e876729678" />
   <Project Path="src/JarvisNet.Engine/JarvisNet.Engine.csproj" Id="9bd24a06-6a0b-4624-81d7-2f9f0babaee8" />
   <Project Path="src/JarvisNet.Plugins.Sdk/JarvisNet.Plugins.Sdk.csproj" />
   <Project Path="src/JarvisNet.Plugins.System/JarvisNet.Plugins.System.csproj" Id="bdbaf2ca-4a5e-47c6-b1a4-f2119d560ccb" />
-  <Project Path="src/JarvisNet.UI.Server/JarvisNet.UI.Server.csproj" />
   <Project Path="src/JarvisNet.UI/JarvisNet.UI.csproj" />
 </Solution>

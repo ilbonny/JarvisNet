@@ -1,3 +1,4 @@
+using System.Text;
 using JarvisNet.Engine.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -60,6 +61,62 @@ public sealed class OllamaBrainService
             .ConfigureAwait(false);
 
         var assistantText = response.Content?.Trim() ?? string.Empty;
+
+        lock (_historyLock)
+        {
+            if (!string.IsNullOrEmpty(assistantText))
+            {
+                _history.AddAssistantMessage(assistantText);
+            }
+        }
+
+        return assistantText;
+    }
+
+    public async Task<string> SendStreamingAsync(
+        string userMessage,
+        Action<string> onChunk,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userMessage))
+        {
+            return string.Empty;
+        }
+
+        ChatHistory historySnapshot;
+        lock (_historyLock)
+        {
+            _history.AddUserMessage(userMessage.Trim());
+            historySnapshot = CloneHistory(_history);
+        }
+
+        _logger.LogDebug("Invio messaggio utente (streaming) a Ollama ({Model}).", _options.ModelName);
+
+        var executionSettings = new OpenAIPromptExecutionSettings
+        {
+            Temperature = _options.Temperature,
+        };
+
+        var builder = new StringBuilder();
+        await foreach (var chunk in _chatCompletion
+                           .GetStreamingChatMessageContentsAsync(
+                               historySnapshot,
+                               executionSettings,
+                               kernel: null,
+                               cancellationToken)
+                           .ConfigureAwait(false))
+        {
+            var delta = chunk.Content;
+            if (string.IsNullOrEmpty(delta))
+            {
+                continue;
+            }
+
+            builder.Append(delta);
+            onChunk(delta);
+        }
+
+        var assistantText = builder.ToString().Trim();
 
         lock (_historyLock)
         {

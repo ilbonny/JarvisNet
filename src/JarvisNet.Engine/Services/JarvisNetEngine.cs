@@ -1,3 +1,4 @@
+using JarvisNet.Core.Enums;
 using JarvisNet.Engine.Abstractions;
 using Microsoft.SemanticKernel;
 
@@ -14,11 +15,20 @@ public sealed class JarvisNetEngine : IJarvisNetEngine
         _orchestrator = orchestrator;
         _orchestrator.UserTranscriptReceived += (_, text) => UserTranscriptReceived?.Invoke(this, text);
         _orchestrator.AssistantResponseReceived += (_, text) => AssistantResponseReceived?.Invoke(this, text);
+        _orchestrator.AssistantResponseChunk += (_, chunk) => AssistantResponseChunk?.Invoke(this, chunk);
+        _orchestrator.StateChanged += (_, state) => StateChanged?.Invoke(this, state);
+        _orchestrator.AudioLevelChanged += (_, level) => AudioLevelChanged?.Invoke(this, level);
     }
 
     public event EventHandler<string>? UserTranscriptReceived;
 
     public event EventHandler<string>? AssistantResponseReceived;
+
+    public event EventHandler<string>? AssistantResponseChunk;
+
+    public event EventHandler<JarvisState>? StateChanged;
+
+    public event EventHandler<float>? AudioLevelChanged;
 
     public Task<string> SendAsync(string userMessage, CancellationToken cancellationToken = default) =>
         _brain.SendAsync(userMessage, cancellationToken);

@@ -1,6 +1,0 @@
-@Jarvis.UI.Server_HostAddress = http://localhost:5034
-
-GET {{Jarvis.UI.Server_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

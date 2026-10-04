@@ -1,4 +1,5 @@
 using JarvisNet.Audio.Abstractions;
+using JarvisNet.Audio.Events;
 using JarvisNet.Audio.Internal;
 using JarvisNet.Audio.Models;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,12 @@ namespace JarvisNet.Audio.Services;
 
 public sealed class PiperTtsService : ITextToSpeechService
 {
+    public event EventHandler? SpeakingStarted;
+
+    public event EventHandler? SpeakingCompleted;
+
+    public event EventHandler<AudioLevelChangedEventArgs>? PlaybackLevelChanged;
+
     private readonly AudioOptions _options;
     private readonly IAudioInputService _audioInput;
     private readonly ILogger<PiperTtsService> _logger;
@@ -49,6 +56,8 @@ public sealed class PiperTtsService : ITextToSpeechService
                 return;
             }
 
+            SpeakingStarted?.Invoke(this, EventArgs.Empty);
+
             var sampleRate = _provider?.Configuration.Model.Audio?.SampleRate ?? (uint)_options.PiperSampleRate;
             var waveFormat = new WaveFormat((int)sampleRate, 16, 1);
             using var wavePlayer = AudioBackendFactory.CreateWavePlayer(_options);
@@ -58,10 +67,16 @@ public sealed class PiperTtsService : ITextToSpeechService
                 sampleRate,
                 _options.OutputDeviceNumber);
             var outputPlayer = new NAudioOutputPlayer();
-            await outputPlayer.PlayPcmAsync(wavePlayer, pcm, waveFormat, cancellationToken).ConfigureAwait(false);
+            await outputPlayer.PlayPcmAsync(
+                wavePlayer,
+                pcm,
+                waveFormat,
+                level => PlaybackLevelChanged?.Invoke(this, new AudioLevelChangedEventArgs(level, DateTimeOffset.UtcNow)),
+                cancellationToken).ConfigureAwait(false);
         }
         finally
         {
+            SpeakingCompleted?.Invoke(this, EventArgs.Empty);
             _audioInput.SetSpeechToTextSuppressed(false);
         }
     }

@@ -1,3 +1,4 @@
+using JarvisNet.Core.Enums;
 using Microsoft.SemanticKernel;
 
 namespace JarvisNet.Engine.Abstractions;
@@ -7,6 +8,12 @@ public interface IJarvisNetEngine
     event EventHandler<string>? UserTranscriptReceived;
 
     event EventHandler<string>? AssistantResponseReceived;
+
+    event EventHandler<string>? AssistantResponseChunk;
+
+    event EventHandler<JarvisState>? StateChanged;
+
+    event EventHandler<float>? AudioLevelChanged;
 
     Task<string> SendAsync(string userMessage, CancellationToken cancellationToken = default);
 
