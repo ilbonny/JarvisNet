@@ -1,0 +1,19 @@
+{
+  "JarvisNet": {
+    "Audio": {
+      "SampleRate": 16000,
+      "OutputDeviceNumber": 3,
+      "InputMode": "Vad",
+      "VadSilenceMs": 800,
+      "PiperVoiceKey": "it_IT-paola-medium",
+      "PiperModelPath": "tts/it_IT-paola-medium.onnx",
+      "PiperExecutablePath": "",
+      "PiperWorkingDirectory": "",
+      "SherpaEncoderPath": "stt/it-kroko/encoder.onnx",
+      "SherpaDecoderPath": "stt/it-kroko/decoder.onnx",
+      "SherpaJoinerPath": "stt/it-kroko/joiner.onnx",
+      "SherpaTokensPath": "stt/it-kroko/tokens.txt",
+      "SherpaModelType": "zipformer2"
+    }
+  }
+}
