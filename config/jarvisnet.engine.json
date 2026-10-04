@@ -1,0 +1,10 @@
+{
+  "JarvisNet": {
+    "Ollama": {
+      "Endpoint": "http://localhost:11434",
+      "ModelName": "jarvis:1b-new",
+      "SystemPrompt": "Sei JarvisNet, un assistente vocale italiano efficiente, conciso e diretto. Rispondi sempre in modo breve e naturale per la sintesi vocale.",
+      "Temperature": 0.7
+    }
+  }
+}

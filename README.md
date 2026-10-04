@@ -55,11 +55,14 @@ flowchart TB
 | **JarvisNet.Audio.UnitTests** | NUnit | `JarvisNet.Audio` |
 | **JarvisNet.Audio.IntegrationTests** | NUnit | `JarvisNet.Audio` |
 | **JarvisNet.Audio.TestApp** | Console | test interattivo microfono/STT/TTS |
+| **JarvisNet.Engine.UnitTests** | NUnit | `JarvisNet.Engine` |
+| **JarvisNet.Engine.IntegrationTests** | NUnit | `JarvisNet.Engine` (Ollama locale) |
+| **JarvisNet.Engine.TestApp** | Console | conversazione vocale STT → Ollama → TTS |
 
 ## Prerequisiti
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- Per il motore LLM locale: [Ollama](https://ollama.com/) (e un modello installato), quando l’integrazione sarà attiva nel codice
+- Per il motore LLM locale: [Ollama](https://ollama.com/) con modello **`jarvis:1b-new`** (tag in `/api/tags`; es. `ollama pull jarvis:1b-new`)
 - Stack audio: **Windows** (WASAPI) e **Linux** (`libasound2`); modelli in `models/` e Piper in `piper/` alla root del repo
 
 ## Quick start
@@ -88,7 +91,13 @@ powershell -ExecutionPolicy Bypass -File scripts/Download-Models.ps1 -Locale es
 powershell -ExecutionPolicy Bypass -File scripts/Download-Piper.ps1
 ```
 
-Config audio condivisa (caricata con `AddJarvisNetSharedAudioConfiguration`):
+Config condivise (caricate con `AddJarvisNetSharedAudioConfiguration` / `AddJarvisNetSharedEngineConfiguration`):
+
+| Area | File |
+|------|------|
+| Engine (Ollama) | [`config/jarvisnet.engine.json`](config/jarvisnet.engine.json) |
+
+Config audio condivisa:
 
 | Profilo | File |
 |---------|------|
@@ -108,19 +117,27 @@ Voce TTS (`JarvisNet:Audio:PiperVoiceKey`):
 | `es_AR-daniela-high` | ES (Argentina) | donna, alta qualità |
 | `es_ES-carlfm-x_low` | ES | uomo |
 
-Test vocale interattivo:
+Test vocale interattivo (solo audio):
 
 ```powershell
 dotnet run --project tests/JarvisNet.Audio.TestApp/JarvisNet.Audio.TestApp.csproj
 $env:JARVISNET_AUDIO_PROFILE="es"; dotnet run --project tests/JarvisNet.Audio.TestApp/JarvisNet.Audio.TestApp.csproj
 ```
 
+Conversazione vocale end-to-end (STT → Ollama → TTS):
+
+```powershell
+dotnet run --project tests/JarvisNet.Engine.TestApp/JarvisNet.Engine.TestApp.csproj
+```
+
+Il motore usa **Microsoft Semantic Kernel** con connettore **Ollama** (pacchetto alpha, warning sperimentale `SKEXP0070` soppresso nel codice di registrazione).
+
 ## Struttura repository
 
 ```
 JarvisNet/
 ├── JarvisNet.slnx
-├── config/                    ← jarvisnet.audio.json (path modelli)
+├── config/                    ← jarvisnet.audio.json, jarvisnet.engine.json
 ├── scripts/                   ← Download-Models.ps1, Download-Piper.ps1
 ├── models/                    ← stt/, tts/ (gitignored, download script)
 ├── piper/                     ← runtime Piper (gitignored)
@@ -137,6 +154,9 @@ JarvisNet/
     ├── JarvisNet.Audio.UnitTests/
     ├── JarvisNet.Audio.IntegrationTests/
     ├── JarvisNet.Audio.TestApp/
+    ├── JarvisNet.Engine.UnitTests/
+    ├── JarvisNet.Engine.IntegrationTests/
+    ├── JarvisNet.Engine.TestApp/
     └── JarvisNet.IntegrationTests/
 ```
 
@@ -149,7 +169,7 @@ JarvisNet/
 
 ## Configurazione
 
-Impostazioni di base in `src/JarvisNet.UI/appsettings.json` e `appsettings.Development.json`. Chiavi per Ollama, modelli Piper e segreti andranno aggiunte man mano che il motore e l’audio saranno collegati all’host; evitare di committare segreti (vedi `.gitignore`).
+Impostazioni di base in `src/JarvisNet.UI/appsettings.json` e `appsettings.Development.json`. Ollama è configurabile in [`config/jarvisnet.engine.json`](config/jarvisnet.engine.json) (`JarvisNet:Ollama`: `Endpoint`, `ModelName`, `SystemPrompt`, `Temperature`). Evitare di committare segreti (vedi `.gitignore`).
 
 ## Licenza
 

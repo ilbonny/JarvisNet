@@ -6,6 +6,9 @@
     <Project Path="tests/JarvisNet.Audio.IntegrationTests/JarvisNet.Audio.IntegrationTests.csproj" />
     <Project Path="tests/JarvisNet.Audio.TestApp/JarvisNet.Audio.TestApp.csproj" />
     <Project Path="tests/JarvisNet.Audio.UnitTests/JarvisNet.Audio.UnitTests.csproj" />
+    <Project Path="tests/JarvisNet.Engine.IntegrationTests/JarvisNet.Engine.IntegrationTests.csproj" />
+    <Project Path="tests/JarvisNet.Engine.TestApp/JarvisNet.Engine.TestApp.csproj" />
+    <Project Path="tests/JarvisNet.Engine.UnitTests/JarvisNet.Engine.UnitTests.csproj" />
     <Project Path="tests/JarvisNet.IntegrationTests/JarvisNet.IntegrationTests.csproj" />
     <Project Path="tests/JarvisNet.UnitTests/JarvisNet.UnitTests.csproj" />
   </Folder>
