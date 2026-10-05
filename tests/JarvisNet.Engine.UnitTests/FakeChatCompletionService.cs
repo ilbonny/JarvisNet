@@ -3,11 +3,25 @@ using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace JarvisNet.Engine.UnitTests;
 
+/// <summary>
+/// Fake IChatCompletionService for unit tests.
+/// Captures the last call's kernel and execution settings for assertion.
+/// </summary>
 internal sealed class FakeChatCompletionService : IChatCompletionService
 {
-    private readonly Func<ChatHistory, ChatMessageContent> _responder;
+    private readonly Func<ChatHistory, PromptExecutionSettings?, Kernel?, ChatMessageContent> _responder;
+
+    public Kernel? LastKernel { get; private set; }
+    public PromptExecutionSettings? LastExecutionSettings { get; private set; }
+    public int CallCount { get; private set; }
 
     public FakeChatCompletionService(Func<ChatHistory, ChatMessageContent> responder)
+        : this((history, _, _) => responder(history))
+    {
+    }
+
+    public FakeChatCompletionService(
+        Func<ChatHistory, PromptExecutionSettings?, Kernel?, ChatMessageContent> responder)
     {
         _responder = responder;
     }
@@ -20,7 +34,10 @@ internal sealed class FakeChatCompletionService : IChatCompletionService
         Kernel? kernel = null,
         CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(_responder(chatHistory));
+        LastKernel = kernel;
+        LastExecutionSettings = executionSettings;
+        CallCount++;
+        return Task.FromResult(_responder(chatHistory, executionSettings, kernel));
     }
 
     public Task<IReadOnlyList<ChatMessageContent>> GetChatMessageContentsAsync(
@@ -29,7 +46,11 @@ internal sealed class FakeChatCompletionService : IChatCompletionService
         Kernel? kernel = null,
         CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<IReadOnlyList<ChatMessageContent>>([_responder(chatHistory)]);
+        LastKernel = kernel;
+        LastExecutionSettings = executionSettings;
+        CallCount++;
+        return Task.FromResult<IReadOnlyList<ChatMessageContent>>(
+            [_responder(chatHistory, executionSettings, kernel)]);
     }
 
     public IAsyncEnumerable<StreamingChatMessageContent> GetStreamingChatMessageContentsAsync(

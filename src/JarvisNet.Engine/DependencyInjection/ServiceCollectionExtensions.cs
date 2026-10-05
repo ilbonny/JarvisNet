@@ -14,6 +14,13 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<OllamaOptions>(configuration.GetSection(OllamaOptions.SectionName));
+        services.AddOptions<McpOptions>()
+            .Configure(options =>
+            {
+                options.Servers = configuration.GetSection(McpOptions.SectionName)
+                        .Get<Dictionary<string, McpServerConfig>>()
+                    ?? new Dictionary<string, McpServerConfig>(StringComparer.OrdinalIgnoreCase);
+            });
 
         services.AddHttpClient(OllamaHttpClientNames.TagsApi, (sp, client) =>
         {
@@ -22,20 +29,25 @@ public static class ServiceCollectionExtensions
             client.Timeout = TimeSpan.FromSeconds(10);
         });
 
-#pragma warning disable SKEXP0070
         services.AddSingleton(sp =>
         {
             var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<OllamaOptions>>().Value;
             var builder = Kernel.CreateBuilder();
-            builder.AddOllamaChatCompletion(
+            // Use Ollama's OpenAI-compatible endpoint (/v1/) so that SK's OpenAI connector
+            // properly serializes tools and receives structured tool_calls in the response.
+            var ollamaOpenAiEndpoint = new Uri(options.Endpoint.TrimEnd('/') + "/v1/");
+            builder.AddOpenAIChatCompletion(
                 modelId: options.ModelName,
-                endpoint: new Uri(options.Endpoint));
+                endpoint: ollamaOpenAiEndpoint,
+                apiKey: "ollama");
             return builder.Build();
         });
 
         services.AddSingleton<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>(sp =>
             sp.GetRequiredService<Kernel>().GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>());
-#pragma warning restore SKEXP0070
+
+        services.AddSingleton<McpClientManager>();
+        services.AddHostedService(sp => sp.GetRequiredService<McpClientManager>());
 
         services.AddSingleton<OllamaBrainService>();
         services.AddSingleton<JarvisNetOrchestrator>();

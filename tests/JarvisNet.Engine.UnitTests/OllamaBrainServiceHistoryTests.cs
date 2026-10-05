@@ -16,8 +16,10 @@ public sealed class OllamaBrainServiceHistoryTests
             new ChatMessageContent(AuthorRole.Assistant, $"Risposta a: {history.Last().Content}"));
 
         var options = new OllamaOptions { SystemPrompt = "system-test" };
+        var kernel = Kernel.CreateBuilder().Build();
         var service = new OllamaBrainService(
             chatCompletion,
+            kernel,
             Microsoft.Extensions.Options.Options.Create(options),
             NullLogger<OllamaBrainService>.Instance);
 
@@ -42,8 +44,10 @@ public sealed class OllamaBrainServiceHistoryTests
             new ChatMessageContent(AuthorRole.Assistant, "ok"));
 
         var options = new OllamaOptions { SystemPrompt = "system-test" };
+        var kernel = Kernel.CreateBuilder().Build();
         var service = new OllamaBrainService(
             chatCompletion,
+            kernel,
             Microsoft.Extensions.Options.Options.Create(options),
             NullLogger<OllamaBrainService>.Instance);
 

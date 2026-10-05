@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\JarvisNet.Core\JarvisNet.Core.csproj" />
-    <ProjectReference Include="..\JarvisNet.Plugins.Sdk\JarvisNet.Plugins.Sdk.csproj" />
     <ProjectReference Include="..\JarvisNet.Audio\JarvisNet.Audio.csproj" />
   </ItemGroup>
 
@@ -14,6 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.12" />
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.80.1" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.80.1-alpha" />
+    <PackageReference Include="ModelContextProtocol" Version="2.2.0" />
   </ItemGroup>
 
   <PropertyGroup>

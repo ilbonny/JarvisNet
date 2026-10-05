@@ -15,6 +15,8 @@ public interface IJarvisNetEngine
 
     event EventHandler<float>? AudioLevelChanged;
 
+    event EventHandler<string>? McpToolExecuting;
+
     Task<string> SendAsync(string userMessage, CancellationToken cancellationToken = default);
 
     void ClearHistory();

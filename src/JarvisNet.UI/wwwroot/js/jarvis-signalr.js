@@ -16,6 +16,15 @@
     statusEl.classList.toggle("status-disconnected", !connected);
   }
 
+  function appendMcpLogLine(text) {
+    if (!chatLog) return;
+    const line = document.createElement("div");
+    line.className = "chat-line mcp-log-line";
+    line.textContent = text;
+    chatLog.appendChild(line);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
   function appendUserLine(text) {
     if (!chatLog) return;
     const line = document.createElement("div");
@@ -75,7 +84,14 @@
     .build();
 
   connection.on("StateChanged", (state) => {
+    window.mcpActiveTool = null;
     window.jarvisState = state;
+  });
+
+  connection.on("McpToolExecuting", (toolName) => {
+    window.mcpActiveTool = toolName;
+    window.jarvisState = "ExecutingMcpTool";
+    appendMcpLogLine("[MCP Executing: " + toolName + "]");
   });
 
   connection.on("AudioLevel", (level) => {
@@ -88,6 +104,9 @@
   });
 
   connection.on("JarvisChunk", (chunk) => {
+    if (window.mcpActiveTool) {
+      window.mcpActiveTool = null;
+    }
     appendJarvisChunk(chunk);
   });
 

@@ -13,6 +13,7 @@
   }
 
   window.jarvisState = window.jarvisState || "Idle";
+  window.mcpActiveTool = window.mcpActiveTool || null;
   window.audioLevel = window.audioLevel || 0;
 
   let outerAngle = 0;
@@ -30,10 +31,14 @@
     Idle: { outer: 0.3, mid: 0.5, inner: 0.8, innerDir: 1, glow: 0.6 },
     Listening: { outer: 0.6, mid: 0.8, inner: 1.2, innerDir: 1, glow: 0.85 },
     Thinking: { outer: 0.8, mid: -1.5, inner: -2.5, innerDir: -1, glow: 1.0 },
+    ExecutingMcpTool: { outer: 2.2, mid: -3.5, inner: 4.0, innerDir: -1, glow: 1.3 },
     Speaking: { outer: 0.5, mid: -0.8, inner: -1.8, innerDir: -1, glow: 1.2 },
   };
 
   function getConfig() {
+    if (window.mcpActiveTool) {
+      return stateConfig.ExecutingMcpTool;
+    }
     return stateConfig[window.jarvisState] || stateConfig.Idle;
   }
 
@@ -157,10 +162,10 @@
     ctx.translate(cx, cy);
     ctx.rotate((rotation * Math.PI) / 180);
     ctx.strokeStyle = "#ff9900";
-    ctx.globalAlpha = 0.9;
-    ctx.lineWidth = 6;
+    ctx.globalAlpha = window.mcpActiveTool ? 1.0 : 0.9;
+    ctx.lineWidth = window.mcpActiveTool ? 8 : 6;
     ctx.shadowColor = "#ff9900";
-    ctx.shadowBlur = 14;
+    ctx.shadowBlur = window.mcpActiveTool ? 22 : 14;
     ctx.beginPath();
     ctx.arc(0, 0, 165, Math.PI * 0.55, Math.PI * 0.85);
     ctx.stroke();
@@ -177,6 +182,19 @@
     ctx.shadowColor = "#00e5ff";
     ctx.shadowBlur = 18 * glowMul;
     ctx.fillText("J.A.R.V.I.S.", 0, 0);
+
+    if (window.mcpActiveTool) {
+      ctx.font = "bold 11px Consolas, monospace";
+      ctx.fillStyle = "#ff9900";
+      ctx.shadowColor = "#ff9900";
+      ctx.shadowBlur = 12;
+      const label =
+        window.mcpActiveTool.length > 36
+          ? window.mcpActiveTool.slice(0, 33) + "..."
+          : window.mcpActiveTool;
+      ctx.fillText("[" + label + "]", 0, 22);
+    }
+
     ctx.restore();
   }
 
@@ -198,7 +216,12 @@
     outerAngle += cfg.outer * (1 + levelBoost);
     midAngle += cfg.mid;
     innerAngle += cfg.inner;
-    tickAngle += window.jarvisState === "Thinking" ? 2.2 : 0.4 + smoothLevel * 0.8;
+    tickAngle +=
+      window.mcpActiveTool || window.jarvisState === "ExecutingMcpTool"
+        ? 3.6
+        : window.jarvisState === "Thinking"
+          ? 2.2
+          : 0.4 + smoothLevel * 0.8;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 

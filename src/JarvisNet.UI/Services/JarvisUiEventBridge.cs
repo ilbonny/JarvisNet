@@ -23,6 +23,7 @@ public sealed class JarvisUiEventBridge : IHostedService
         _engine.UserTranscriptReceived += OnUserTranscriptReceived;
         _engine.AssistantResponseChunk += OnAssistantResponseChunk;
         _engine.AssistantResponseReceived += OnAssistantResponseReceived;
+        _engine.McpToolExecuting += OnMcpToolExecuting;
 
         return _hubContext.Clients.All.SendAsync("StateChanged", JarvisState.Idle.ToString(), cancellationToken);
     }
@@ -34,6 +35,7 @@ public sealed class JarvisUiEventBridge : IHostedService
         _engine.UserTranscriptReceived -= OnUserTranscriptReceived;
         _engine.AssistantResponseChunk -= OnAssistantResponseChunk;
         _engine.AssistantResponseReceived -= OnAssistantResponseReceived;
+        _engine.McpToolExecuting -= OnMcpToolExecuting;
 
         return Task.CompletedTask;
     }
@@ -52,4 +54,7 @@ public sealed class JarvisUiEventBridge : IHostedService
 
     private void OnAssistantResponseReceived(object? sender, string text) =>
         _ = _hubContext.Clients.All.SendAsync("JarvisChunkEnd");
+
+    private void OnMcpToolExecuting(object? sender, string toolName) =>
+        _ = _hubContext.Clients.All.SendAsync("McpToolExecuting", toolName);
 }

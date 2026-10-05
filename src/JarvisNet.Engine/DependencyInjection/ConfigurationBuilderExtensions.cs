@@ -17,6 +17,26 @@ public static class ConfigurationBuilderExtensions
             configuration.AddJsonFile(sharedPath, optional: false, reloadOnChange: true);
         }
 
+        var mcpPath = Path.Combine(repositoryRoot, "config", "jarvisnet.mcp.json");
+        if (File.Exists(mcpPath))
+        {
+            configuration.AddJsonFile(mcpPath, optional: true, reloadOnChange: true);
+        }
+
+        return configuration;
+    }
+
+    public static IConfigurationBuilder AddJarvisNetSharedMcpConfiguration(
+        this IConfigurationBuilder configuration,
+        string contentRootPath)
+    {
+        var repositoryRoot = FindRepositoryRoot(contentRootPath);
+        var mcpPath = Path.Combine(repositoryRoot, "config", "jarvisnet.mcp.json");
+        if (File.Exists(mcpPath))
+        {
+            configuration.AddJsonFile(mcpPath, optional: true, reloadOnChange: true);
+        }
+
         return configuration;
     }
 

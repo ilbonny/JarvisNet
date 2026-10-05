@@ -145,6 +145,13 @@ body {
   font-weight: bold;
 }
 
+.chat-line.mcp-log-line {
+  color: var(--orange);
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 10px rgba(255, 153, 0, 0.55);
+}
+
 .typewriter-cursor {
   display: inline-block;
   width: 0.55em;

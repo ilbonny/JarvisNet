@@ -17,6 +17,5 @@
   <Project Path="src/JarvisNet.Core/JarvisNet.Core.csproj" Id="05d62d4b-f7c7-4093-9b23-75e876729678" />
   <Project Path="src/JarvisNet.Engine/JarvisNet.Engine.csproj" Id="9bd24a06-6a0b-4624-81d7-2f9f0babaee8" />
   <Project Path="src/JarvisNet.Plugins.Sdk/JarvisNet.Plugins.Sdk.csproj" />
-  <Project Path="src/JarvisNet.Plugins.System/JarvisNet.Plugins.System.csproj" Id="bdbaf2ca-4a5e-47c6-b1a4-f2119d560ccb" />
   <Project Path="src/JarvisNet.UI/JarvisNet.UI.csproj" />
 </Solution>

@@ -24,6 +24,7 @@ builder.Services.AddJarvisNetAudio(builder.Configuration);
 builder.Services.AddJarvisNetEngine(builder.Configuration);
 
 using var host = builder.Build();
+await host.StartAsync(CancellationToken.None).ConfigureAwait(false);
 
 var audioOptions = host.Services.GetRequiredService<IOptions<AudioOptions>>().Value;
 await EnsurePiperOnWindowsAsync(audioOptions).ConfigureAwait(false);
