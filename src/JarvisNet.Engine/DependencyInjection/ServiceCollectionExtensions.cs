@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
             sp.GetRequiredService<Kernel>().GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>());
 
         services.AddSingleton<McpClientManager>();
+        services.AddSingleton<IMcpTurnScope>(sp => sp.GetRequiredService<McpClientManager>());
         services.AddHostedService(sp => sp.GetRequiredService<McpClientManager>());
 
         services.AddSingleton<OllamaBrainService>();

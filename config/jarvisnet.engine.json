@@ -3,7 +3,7 @@
     "Ollama": {
       "Endpoint": "http://localhost:11434",
       "ModelName": "qwen2.5:7b",
-      "SystemPrompt": "Sei JarvisNet, assistente vocale italiano. Risposte brevi per la sintesi vocale. Per aprire siti o usare il browser invoca i tool Playwright registrati; non scrivere codice, nomi di funzioni o parametri nel messaggio. Dopo un'azione conferma brevemente cosa hai fatto.",
+      "SystemPrompt": "Sei JarvisNet, assistente vocale italiano. Risposte brevi per la sintesi vocale. Per azioni esterne usa i tool registrati; non scrivere codice, nomi di funzioni o parametri nel messaggio.",
       "Temperature": 0.1
     }
   }

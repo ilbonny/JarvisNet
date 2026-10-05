@@ -20,7 +20,7 @@ public sealed class OllamaBrainServiceHistoryTests
         var service = new OllamaBrainService(
             chatCompletion,
             kernel,
-            Microsoft.Extensions.Options.Options.Create(options),
+            options,
             NullLogger<OllamaBrainService>.Instance);
 
         await service.SendAsync("Ciao").ConfigureAwait(false);
@@ -48,7 +48,7 @@ public sealed class OllamaBrainServiceHistoryTests
         var service = new OllamaBrainService(
             chatCompletion,
             kernel,
-            Microsoft.Extensions.Options.Options.Create(options),
+            options,
             NullLogger<OllamaBrainService>.Instance);
 
         await service.SendAsync("Ciao").ConfigureAwait(false);
