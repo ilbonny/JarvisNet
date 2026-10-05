@@ -1,0 +1,10 @@
+[    1377ms] [ERROR] Error logged with the Track&Report JS errors API(http://tiny/1covqr6l8/wamazindeClieUserJava): {"m":"Found no value in attribute data-clientData under card root. Please assign in server.","csm":"v5 ueLogError callee","logLevel":"WARN","attribution":"AmazonHomepageIndependentCards__single-creative-card","pageURL":"https://www.amazon.it/","s":[],"t":1165} {m: Found no value in attribute data-clientData under card root. Please assign in server., name: undefined, type: undefined, csm: v5 ueLogError callee, logLevel: WARN} @ https://images-na.ssl-images-amazon.com/images/I/215h87l68bL.js:3
+[  168052ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://cognito-identity.eu-west-1.amazonaws.com/:0
+[  168115ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://cognito-identity.eu-west-1.amazonaws.com/:0
+[  168177ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://cognito-identity.eu-west-1.amazonaws.com/:0
+[  168239ms] [ERROR] Failed to load resource: the server responded with a status of 400 () @ https://cognito-identity.eu-west-1.amazonaws.com/:0
+[  168240ms] Uncaught (in promise) Error: CWR: Failed to retrieve Cognito OpenId token: Error: Unknown OpenIdToken response
+    at <anonymous> (https://client.rum.us-east-1.amazonaws.com/1.x/cwr.js:1:45582)
+    at <anonymous> (https://client.rum.us-east-1.amazonaws.com/1.x/cwr.js:1:44234)
+    at <anonymous> (https://client.rum.us-east-1.amazonaws.com/1.x/cwr.js:1:44339)
+    at a (https://client.rum.us-east-1.amazonaws.com/1.x/cwr.js:1:43056)

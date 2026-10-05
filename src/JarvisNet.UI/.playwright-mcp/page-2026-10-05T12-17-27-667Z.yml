@@ -1,0 +1,590 @@
+- generic [ref=e2]:
+  - navigation "Menu tasti di scelta rapida" [ref=e3]:
+    - heading "Passa a" [level=2] [ref=e4]
+    - list "Passa a" [ref=e5]:
+      - listitem [ref=e6]:
+        - link "contenuto principale" [ref=e7] [cursor=pointer]:
+          - /url: "#skippedLink"
+          - text: Contenuti principali
+    - separator [aria-hidden] [ref=e8]
+    - heading "Tasti di scelta rapida" [level=2] [ref=e9]
+    - list "Tasti di scelta rapida" [ref=e10]:
+      - listitem [ref=e11]:
+        - link "Cerca, alt, slash" [ref=e12] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - generic [aria-hidden] [ref=e13]:
+            - generic [ref=e14]: Cerca
+            - generic [ref=e15]:
+              - generic [ref=e16]: alt
+              - generic [ref=e17]: +
+              - generic [ref=e18]: /
+      - listitem [ref=e19]:
+        - link "Carrello, Maiusc, alt, c" [ref=e20] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - generic [aria-hidden] [ref=e21]:
+            - generic [ref=e22]: Carrello
+            - generic [ref=e23]:
+              - generic [ref=e24]: maiusc
+              - generic [ref=e25]: +
+              - generic [ref=e26]: alt
+              - generic [ref=e27]: +
+              - generic [ref=e28]: C
+      - listitem [ref=e29]:
+        - link "Home, Maiusc, alt, h" [ref=e30] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - generic [aria-hidden] [ref=e31]:
+            - generic [ref=e32]: Home page
+            - generic [ref=e33]:
+              - generic [ref=e34]: maiusc
+              - generic [ref=e35]: +
+              - generic [ref=e36]: alt
+              - generic [ref=e37]: +
+              - generic [ref=e38]: H
+      - listitem [ref=e39]:
+        - link "I tuoi ordini, Maiusc, alt, o" [ref=e40] [cursor=pointer]:
+          - /url: javascript:void(0)
+          - generic [aria-hidden] [ref=e41]:
+            - generic [ref=e42]: Ordini
+            - generic [ref=e43]:
+              - generic [ref=e44]: maiusc
+              - generic [ref=e45]: +
+              - generic [ref=e46]: alt
+              - generic [ref=e47]: +
+              - generic [ref=e48]: O
+      - listitem [ref=e49]:
+        - button "Mostra/nascondi scorciatoie, Maiusc, alt, z" [ref=e50] [cursor=pointer]:
+          - generic [aria-hidden] [ref=e51]:
+            - generic [ref=e52]: Mostra/nascondi scorciatoie
+            - generic [ref=e53]:
+              - generic [ref=e54]: maiusc
+              - generic [ref=e55]: +
+              - generic [ref=e56]: alt
+              - generic [ref=e57]: +
+              - generic [ref=e58]: Z
+    - generic [ref=e59]: Per spostarti tra gli elementi, usa le frecce su o giù della tastiera.
+  - banner [ref=e65]:
+    - navigation "Principale" [ref=e66]:
+      - generic [ref=e67]:
+        - generic [ref=e68]:
+          - link "Amazon.it" [ref=e70] [cursor=pointer]:
+            - /url: /ref=nav_logo
+            - generic: .it
+          - 'button "Il tuo indirizzo di consegna: Spagna" [ref=e73] [cursor=pointer]':
+            - generic [ref=e75]:
+              - generic [ref=e76]: "Il tuo indirizzo di consegna:"
+              - generic [ref=e77]: Spagna
+        - search [ref=e80]:
+          - generic [ref=e83]:
+            - generic [ref=e84]: Tutte le categorie
+            - combobox "Seleziona la categoria in cui desideri effettuare la ricerca" [ref=e87] [cursor=pointer]:
+              - option "Tutte le categorie" [selected]
+              - option "Alexa Skill"
+              - option "Alimentari e cura della casa"
+              - option "Amazon Global Store"
+              - option "Amazon Haul"
+              - option "Amazon Seconda mano"
+              - option "App e Giochi"
+              - option "Audiolibri Audible"
+              - option "Auto e Moto - Parti e Accessori"
+              - option "Bellezza"
+              - option "Buoni Regalo"
+              - option "Cancelleria e prodotti per ufficio"
+              - option "Casa e cucina"
+              - option "CD e Vinili"
+              - option "Dispositivi Amazon"
+              - option "Elettronica"
+              - option "Fai da te"
+              - option "Film e TV"
+              - option "Giardino e giardinaggio"
+              - option "Giochi e giocattoli"
+              - option "Grandi elettrodomestici"
+              - option "Handmade"
+              - option "Illuminazione"
+              - option "Industria e Scienza"
+              - option "Informatica"
+              - option "Iscriviti e Risparmia"
+              - option "Kindle Store"
+              - option "Libri"
+              - option "Luxury Stores"
+              - option "Meno di 10€"
+              - option "Moda"
+              - option "Abbigliamento, scarpe e gioielli da donna"
+              - option "Abbigliamento, scarpe e gioielli da uomo"
+              - option "Abbigliamento, scarpe e gioielli da ragazza"
+              - option "Abbigliamento, scarpe e gioielli da ragazzo"
+              - option "Abbigliamento, scarpe e gioielli per bambini"
+              - option "Musica Digitale"
+              - option "Prima infanzia"
+              - option "Prime Video"
+              - option "Prodotti per animali domestici"
+              - option "Salute e cura della persona"
+              - option "Software"
+              - option "Sport e tempo libero"
+              - option "Strumenti musicali e DJ"
+              - option "Valigie e accessori da viaggio"
+              - option "Videogiochi"
+          - searchbox "Cerca Amazon.it" [ref=e90]
+          - generic "VAI" [ref=e93] [cursor=pointer]:
+            - button "VAI" [ref=e94]
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - link "Scegli una lingua per fare acquisti su Amazon Italia. La selezione attuale è Italiano (IT)." [ref=e98] [cursor=pointer]:
+              - /url: /customer-preferences/edit?ie=UTF8&preferencesReturnUrl=%2F&ref_=topnav_lang
+              - generic [ref=e101]:
+                - img "Italia" [ref=e102]
+                - generic [ref=e103]: IT
+            - button "Espandi per cambiare lingua o Paese" [ref=e104] [cursor=pointer]
+          - generic [ref=e105]:
+            - link "Ciao, accedi Account e liste" [ref=e106] [cursor=pointer]:
+              - /url: https://www.amazon.it/ap/signin?openid.return_to=https%3A%2F%2Fwww.amazon.it%2F%3Fref_%3Dnav_ya_signin&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.assoc_handle=itflex&openid.mode=checkid_setup&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0
+              - generic [ref=e107]: Ciao, accedi
+              - generic [ref=e109]: Account e liste
+            - button "Espandi account e liste" [ref=e110] [cursor=pointer]
+          - link "Ordini" [ref=e111] [cursor=pointer]:
+            - /url: /gp/css/order-history?ref_=nav_orders_first
+          - link "0 articoli nel carrello" [ref=e114] [cursor=pointer]:
+            - /url: /gp/cart/view.html?ref_=nav_cart
+            - generic [aria-hidden] [ref=e116]: "0"
+            - generic [aria-hidden] [ref=e119]: Carrello
+      - generic [ref=e120]:
+        - button "Apri il menu Tutte le categorie" [ref=e122] [cursor=pointer]:
+          - generic [ref=e124]: Tutte
+        - list [ref=e128]:
+          - listitem [ref=e129]:
+            - link "Amazon Haul" [ref=e131] [cursor=pointer]:
+              - /url: /haul/store?ref_=nav_cs_hul_disb
+          - listitem [ref=e132]:
+            - link "Bestseller" [ref=e134] [cursor=pointer]:
+              - /url: /gp/bestsellers/?ref_=nav_cs_bestsellers
+          - listitem [ref=e135]:
+            - link "Novità" [ref=e137] [cursor=pointer]:
+              - /url: /gp/new-releases/?ref_=nav_cs_newreleases
+          - listitem [ref=e138]:
+            - link "Offerte" [ref=e140] [cursor=pointer]:
+              - /url: /deals?ref_=nav_cs_gb
+          - listitem [ref=e141]:
+            - generic [ref=e142]:
+              - link "Prime" [ref=e143] [cursor=pointer]:
+                - /url: /prime?ref_=nav_cs_primelink_nonmember
+              - button "Dettagli su Prime" [ref=e144] [cursor=pointer]
+          - listitem [ref=e145]:
+            - link "Moda" [ref=e147] [cursor=pointer]:
+              - /url: /Moda/b/?ie=UTF8&node=5512286031&ref_=nav_cs_fashion
+          - listitem [ref=e148]:
+            - link "Casa e cucina" [ref=e150] [cursor=pointer]:
+              - /url: /Casa-Cucina/b/?ie=UTF8&node=524015031&ref_=nav_cs_home
+          - listitem [ref=e151]:
+            - generic [ref=e152]:
+              - link "Buoni Regalo" [ref=e153] [cursor=pointer]:
+                - /url: /buoni-regalo/b/?ie=UTF8&node=3557017031&ref_=nav_cs_gc
+              - button "Dettagli su Buoni Regalo" [ref=e154] [cursor=pointer]
+          - listitem [ref=e155]:
+            - link "Informatica" [ref=e157] [cursor=pointer]:
+              - /url: /computer/b/?ie=UTF8&node=425916031&ref_=nav_cs_pc
+          - listitem [ref=e158]:
+            - link "Supermercato" [ref=e160] [cursor=pointer]:
+              - /url: /Alimentari-Cura-Casa/b/?ie=UTF8&node=6198092031&ref_=nav_cs_consumables
+          - listitem [ref=e161]:
+            - link "Elettronica" [ref=e163] [cursor=pointer]:
+              - /url: /elettronica/b/?ie=UTF8&node=412609031&ref_=nav_cs_electronics
+          - listitem [ref=e164]:
+            - link "Sport e Attività all'aperto" [ref=e166] [cursor=pointer]:
+              - /url: /Sports-and-Leisure/b/?ie=UTF8&node=524012031&ref_=nav_cs_sports
+          - listitem [ref=e167]:
+            - link "Toolkit Acquirente" [ref=e169] [cursor=pointer]:
+              - /url: /b/?node=15419505031&ref_=nav_cs_shoppertoolkit
+          - listitem [ref=e170]:
+            - link "Giochi e Giocattoli" [ref=e172] [cursor=pointer]:
+              - /url: /Giochi-Giocattoli/b/?ie=UTF8&node=523997031&ref_=nav_cs_toys
+          - listitem [ref=e173]:
+            - link "Videogiochi" [ref=e175] [cursor=pointer]:
+              - /url: /videogiochi/b/?ie=UTF8&node=412603031&ref_=nav_cs_video_games
+          - listitem [ref=e176]:
+            - link "Bellezza" [ref=e178] [cursor=pointer]:
+              - /url: /Bellezza/b/?ie=UTF8&node=6198082031&ref_=nav_cs_beauty
+          - listitem [ref=e179]:
+            - link "Salute e cura della casa" [ref=e181] [cursor=pointer]:
+              - /url: /Salute-Cura-Persona/b/?ie=UTF8&node=1571289031&ref_=nav_cs_hpc
+          - listitem [ref=e182]:
+            - link "Miglioramento casa" [ref=e184] [cursor=pointer]:
+              - /url: /Fai-Da-Te/b/?ie=UTF8&node=2454160031&ref_=nav_cs_hi
+          - listitem [ref=e185]:
+            - link "Auto e moto" [ref=e187] [cursor=pointer]:
+              - /url: /Auto-e-Moto/b/?ie=UTF8&node=1571280031&ref_=nav_cs_automotive
+          - listitem [ref=e188]:
+            - link "Prima infanzia" [ref=e190] [cursor=pointer]:
+              - /url: /Prima-Infanzia/b/?ie=UTF8&node=1571286031&ref_=nav_cs_baby
+          - listitem [ref=e191]:
+            - link "Spedizione Gratuita" [ref=e193] [cursor=pointer]:
+              - /url: /b/?node=27173187031&ref_=nav_cs_freeshipping
+          - listitem [ref=e194]:
+            - link "Prime Video" [ref=e196] [cursor=pointer]:
+              - /url: /gp/browse.html?node=98207986031&ref_=nav_cs_sadIT1
+          - listitem [ref=e197]:
+            - link "eBook in italiano" [ref=e199] [cursor=pointer]:
+              - /url: /ebooks-kindle/b/?ie=UTF8&node=827182031&ref_=nav_cs_kindle_books
+          - listitem [ref=e200]:
+            - link "Prodotti per tutti i giorni" [ref=e202] [cursor=pointer]:
+              - /url: /fmc/everyday-essentials?ref_=nav_cs_ee
+          - listitem [ref=e203]:
+            - link "Prodotti per animali domestici" [ref=e205] [cursor=pointer]:
+              - /url: /gp/browse.html?node=12472499031&ref_=nav_cs_pets
+          - listitem [ref=e206]:
+            - link "Iscriviti e Risparmia" [ref=e208] [cursor=pointer]:
+              - /url: /auto-deliveries/landing?ref_=nav_cs_sns
+          - listitem [ref=e209]:
+            - link "Marchi Premium" [ref=e211] [cursor=pointer]:
+              - /url: /gp/browse.html?node=206534235031&ref_=nav_cs_pb
+          - listitem [ref=e212]:
+            - link "Vendere" [ref=e214] [cursor=pointer]:
+              - /url: /b/?_encoding=UTF8&ld=AZITGNOSellC&node=2383617031&ref_=nav_cs_sell
+          - listitem [ref=e215]:
+            - link "Prodotti personalizzati" [ref=e217] [cursor=pointer]:
+              - /url: /Amazon-Custom/b/?ie=UTF8&node=14578061031&ref_=nav_cs_custom
+        - generic [ref=e221]:
+          - img "La Festa delle Offerte Prime sta per iniziare" [ref=e222]
+          - link "La Festa delle Offerte Prime sta per iniziare" [ref=e223] [cursor=pointer]:
+            - generic [ref=e224]: "09"
+            - generic [ref=e226]: ":"
+            - generic [ref=e227]: "42"
+            - generic [ref=e229]: ":"
+            - generic [ref=e230]: "33"
+  - main [ref=e233]:
+    - generic [ref=e236]:
+      - list [ref=e238]:
+        - listitem [ref=e239]:
+          - generic [ref=e247]:
+            - link "La Festa delle Offerte Prime Inizia a mezzanotte Insrivi a Prime La Festa delle Offerte Prime inizia a mezzanotte" [ref=e248] [cursor=pointer]:
+              - /url: /festaprime/?_encoding=UTF8&_encoding=UTF8&ref_=pd_hp_d_r_atf_unk&pd_rd_w=mkDiF&content-id=amzn1.sym.1bef9f31-607e-4d3f-b93e-b8dcd203233d&pf_rd_p=1bef9f31-607e-4d3f-b93e-b8dcd203233d&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e
+              - generic [ref=e250]:
+                - generic [ref=e251]:
+                  - generic [ref=e252]: La Festa delle Offerte Prime
+                  - heading "Inizia a mezzanotte" [level=3] [ref=e253]
+                - img "Insrivi a Prime" [ref=e258]
+              - img "La Festa delle Offerte Prime inizia a mezzanotte" [ref=e259]
+            - region "Video Player" [ref=e261]:
+              - application [ref=e262]
+              - generic [ref=e263] [cursor=pointer]
+              - generic [ref=e264]:
+                - button "Play" [ref=e265] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e266]: 
+                - button "Audio" [ref=e268] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e269]: 
+                - text: 
+              - text: 
+        - listitem [ref=e271]:
+          - generic [ref=e279]:
+            - link [ref=e280] [cursor=pointer]:
+              - /url: /devicedeals/?_encoding=UTF8&_encoding=UTF8&bubble-id=deals-collection-amazon-devices-all&ref=ods_gw_MB_IT_IT_XPL_COMB_PBDD26_LU_PROMO_WD2_FC_VIDEO&ref_=pd_hp_d_r_atf_unk&pd_rd_w=5d4X4&content-id=amzn1.sym.a776ecd9-7e15-4b66-8866-6314397ce36f&pf_rd_p=a776ecd9-7e15-4b66-8866-6314397ce36f&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e
+              - 'heading "Dispositivi Amazon: -60%" [level=3] [ref=e284]'
+              - img "Dispositivi Amazon" [ref=e287]
+            - region "Video Player" [ref=e289]:
+              - application [ref=e290]
+              - generic [ref=e291] [cursor=pointer]
+              - generic [ref=e292]:
+                - button "Play" [ref=e293] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e294]: 
+                - button "Audio" [ref=e296] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=e297]: 
+                - text: 
+              - text: 
+        - listitem [ref=e299]:
+          - link [ref=e304] [cursor=pointer]:
+            - /url: /gp/aw/d/B0FW8QLJ41/ref=ods_gw_WD_IT_IT_EERO_Sno_Pat_2026Devices_MWAC1_SH/?ie=UTF8&pd_rd_w=6LRCr&content-id=amzn1.sym.3856322c-9d22-4273-90b2-813767f0975c&pf_rd_p=3856322c-9d22-4273-90b2-813767f0975c&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_unk
+            - generic:
+              - generic:
+                - generic:
+                  - generic: eero Outdoor 7
+                  - heading "Il tuo Wi-Fi anche all'aperto" [level=3]
+            - img "Router Wi-Fi eero Outdoor 7 bianco su sfondo viola." [ref=e306]
+        - listitem [ref=e307]:
+          - generic [ref=e315]:
+            - 'link "Risparmia il 15% su tutto Usa il codice: HAUL15 Amazon Haul Solo per i clienti Prime! Risparmia il 15% su tutto Usa il codice: HAUL15" [ref=e316] [cursor=pointer]':
+              - /url: /haul/store/?_encoding=UTF8&_encoding=UTF8&ref_=hul_cgw_atf_m_it_ch_wd_1026_pbdd26&pd_rd_w=2S1ns&content-id=amzn1.sym.5686e177-c7a1-463f-9dd8-ea48cb0d9f62&pf_rd_p=5686e177-c7a1-463f-9dd8-ea48cb0d9f62&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=HFP8I&pd_rd_r=4a8de0db-fc1b-4747-a2c1-a9c9ae3cd4ce
+              - generic [ref=e318]:
+                - generic [ref=e319]:
+                  - heading "Risparmia il 15% su tutto" [level=3] [ref=e320]
+                  - generic [ref=e323]: "Usa il codice: HAUL15"
+                - img "Amazon Haul" [ref=e326]
+              - generic [ref=e327]: Solo per i clienti Prime!
+              - 'img "Risparmia il 15% su tutto Usa il codice: HAUL15" [ref=e328]'
+            - region "Video Player" [ref=e330]:
+              - application [ref=e331]
+              - generic [ref=e332] [cursor=pointer]
+              - button "Play" [ref=e334] [cursor=pointer]:
+                - generic [aria-hidden] [ref=e335]: 
+              - text: 
+        - listitem [ref=e337]:
+          - generic [ref=e343]:
+            - link [ref=e344] [cursor=pointer]:
+              - /url: /events/deals/?_encoding=UTF8&_encoding=UTF8&ref_=dealz_wd_des_see_more&bubble-id=deals-contextual-link&dynamicBubble=%7B%2522collectionId%2522%3A%2522deals-contextual-link%2522%2C%2522departmentsIncluded%2522%3A%5B6307069031%2C473572031%2C6394793031%2C700817031%5D%7D&pd_rd_w=jdO5R&content-id=amzn1.sym.c288963a-a938-419c-a291-76f3da018537&pf_rd_p=c288963a-a938-419c-a291-76f3da018537&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e
+              - heading "Offerte in scadenza" [level=3] [ref=e348]
+            - list [ref=e352]:
+              - listitem [ref=e353]:
+                - generic [ref=e355]:
+                  - link [aria-hidden] [ref=e357] [cursor=pointer]:
+                    - /url: /NIVEA-Anti-Imperfezioni-Niacinamide-schiumogeno-purificante/dp/B0C17Q9FGS/?_encoding=UTF8&pd_rd_w=jdO5R&content-id=amzn1.sym.c288963a-a938-419c-a291-76f3da018537&pf_rd_p=c288963a-a938-419c-a291-76f3da018537&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_dealz_wd_des
+                  - link "NIVEA Acqua Micellare Delicata, 400 ml 47% di sconto" [ref=e363] [cursor=pointer]:
+                    - /url: /NIVEA-Anti-Imperfezioni-Niacinamide-schiumogeno-purificante/dp/B0C17Q9FGS/?_encoding=UTF8&pd_rd_w=jdO5R&content-id=amzn1.sym.c288963a-a938-419c-a291-76f3da018537&pf_rd_p=c288963a-a938-419c-a291-76f3da018537&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_dealz_wd_des
+                    - generic [ref=e364]: NIVEA Acqua Micellare Delicata, 400 ml
+                    - generic [ref=e365]: 47% di sconto
+              - listitem [ref=e367]:
+                - generic [ref=e369]:
+                  - link [aria-hidden] [ref=e371] [cursor=pointer]:
+                    - /url: /Energizer-Max-Pila-antincendio-conservazione/dp/B00W5C1GUY/?_encoding=UTF8&pd_rd_w=jdO5R&content-id=amzn1.sym.c288963a-a938-419c-a291-76f3da018537&pf_rd_p=c288963a-a938-419c-a291-76f3da018537&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_dealz_wd_des
+                  - link "Energizer Max Pila - Batteria 9V Alcaline (Confezione da 2) 6% di sconto" [ref=e377] [cursor=pointer]:
+                    - /url: /Energizer-Max-Pila-antincendio-conservazione/dp/B00W5C1GUY/?_encoding=UTF8&pd_rd_w=jdO5R&content-id=amzn1.sym.c288963a-a938-419c-a291-76f3da018537&pf_rd_p=c288963a-a938-419c-a291-76f3da018537&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_dealz_wd_des
+                    - generic [ref=e378]: Energizer Max Pila - Batteria 9V Alcaline (Confezione da 2)
+                    - generic [ref=e379]: 6% di sconto
+              - listitem [ref=e381]:
+                - generic [ref=e383]:
+                  - link [aria-hidden] [ref=e385] [cursor=pointer]:
+                    - /url: /Detergente-pavimenti-Nuncas-incera-profumato/dp/B00FWKAXG4/?_encoding=UTF8&pd_rd_w=jdO5R&content-id=amzn1.sym.c288963a-a938-419c-a291-76f3da018537&pf_rd_p=c288963a-a938-419c-a291-76f3da018537&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_dealz_wd_des
+                  - link "Nuncas Lava & Incera - Detergente Pavimenti - Rosa Tea - 1000 ml 15% di sconto" [ref=e391] [cursor=pointer]:
+                    - /url: /Detergente-pavimenti-Nuncas-incera-profumato/dp/B00FWKAXG4/?_encoding=UTF8&pd_rd_w=jdO5R&content-id=amzn1.sym.c288963a-a938-419c-a291-76f3da018537&pf_rd_p=c288963a-a938-419c-a291-76f3da018537&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_dealz_wd_des
+                    - generic [ref=e392]: Nuncas Lava & Incera - Detergente Pavimenti - Rosa Tea - 1000 ml
+                    - generic [ref=e393]: 15% di sconto
+              - listitem [ref=e395]:
+                - generic [ref=e397]:
+                  - link [aria-hidden] [ref=e399] [cursor=pointer]:
+                    - /url: /Amazon-Essentials-Sandalo-Espadrille-Wedges-Sandals/dp/B08B7N3S1H/?_encoding=UTF8&pd_rd_w=jdO5R&content-id=amzn1.sym.c288963a-a938-419c-a291-76f3da018537&pf_rd_p=c288963a-a938-419c-a291-76f3da018537&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_dealz_wd_des
+                  - link "Amazon Essentials Sandali Espadrillas da Donna con Zeppa Flatform, Marrone, 37 EU 6% di sconto" [ref=e405] [cursor=pointer]:
+                    - /url: /Amazon-Essentials-Sandalo-Espadrille-Wedges-Sandals/dp/B08B7N3S1H/?_encoding=UTF8&pd_rd_w=jdO5R&content-id=amzn1.sym.c288963a-a938-419c-a291-76f3da018537&pf_rd_p=c288963a-a938-419c-a291-76f3da018537&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_dealz_wd_des
+                    - generic [ref=e406]: Amazon Essentials Sandali Espadrillas da Donna con Zeppa Flatform, Marrone, 37 EU
+                    - generic [ref=e407]: 6% di sconto
+        - listitem [ref=e409]:
+          - link [ref=e414] [cursor=pointer]:
+            - /url: /gp/aw/d/B0GSH6FCBN/ref=ods_gw_WD_IT_IT_SMP_CAR_KIMCHI_WD6/?ie=UTF8&pd_rd_w=9RXV4&content-id=amzn1.sym.c9f3266f-1f21-4af2-bb8a-c87fff509032&pf_rd_p=c9f3266f-1f21-4af2-bb8a-c87fff509032&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_unk
+            - generic:
+              - generic:
+                - generic:
+                  - heading "Nuova Fire TV Stick 4K" [level=3]
+                  - generic: "Scopri l’offerta lancio: 35,99€ - Risparmia il 52%"
+            - img "La nuova Fire TV Stick 4K" [ref=e416]
+        - listitem [ref=e417]:
+          - link [ref=e422] [cursor=pointer]:
+            - /url: /b/?_encoding=UTF8&node=222534804031&language=it_IT&pd_rd_w=nnJUM&content-id=amzn1.sym.e30b61dc-12d5-4a54-8191-a9e1f172cb88&pf_rd_p=e30b61dc-12d5-4a54-8191-a9e1f172cb88&pf_rd_r=V2S7NS2KGQDXBV2X50B9&pd_rd_wg=x29qe&pd_rd_r=b06c675f-6d1c-40e1-ad85-5fbf31d6b34e&ref_=pd_hp_d_r_atf_unk
+            - generic:
+              - generic:
+                - generic:
+                  - heading "Tocchi d’autunno" [level=3]
+                  - generic: Trasforma il tuo spazio
+            - img "Spazio tutto tuo. Arredi e décor per la vita universitaria" [ref=e424]
+        - listitem "Sto caricando altro" [ref=e425]
+      - link "Diapositiva successiva del carosello" [ref=e431] [cursor=pointer]:
+        - /url: "#"
+  - complementary "Articoli visualizzati di recente e suggerimenti in primo piano"
+  - generic [ref=e433]:
+    - button "Torna su" [ref=e434] [cursor=pointer]
+    - generic [ref=e436]:
+      - generic [ref=e437]:
+        - heading "Per conoscerci meglio" [level=6] [ref=e438]
+        - list [ref=e439]:
+          - listitem [ref=e440]:
+            - link "Opportunità di lavoro" [ref=e441] [cursor=pointer]:
+              - /url: /gp/browse.html?node=521771031&ref_=footer_gw_m_b_careers
+          - listitem [ref=e442]:
+            - link "Informazioni su Amazon" [ref=e443] [cursor=pointer]:
+              - /url: https://www.amazon.it/p/feature/u2eov7zkabqn3n2
+          - listitem [ref=e444]:
+            - link "Sostenibilità" [ref=e445] [cursor=pointer]:
+              - /url: https://sostenibilita.aboutamazon.it/?utm_source=gateway&utm_medium=footer&ref_=susty_footer
+          - listitem [ref=e446]:
+            - link "Amazon Science" [ref=e447] [cursor=pointer]:
+              - /url: https://www.amazon.science
+      - generic [ref=e449]:
+        - heading "Guadagna con Amazon" [level=6] [ref=e450]
+        - list [ref=e451]:
+          - listitem [ref=e452]:
+            - link "Vendi su Amazon" [ref=e453] [cursor=pointer]:
+              - /url: https://services.amazon.it/sell.html?ld=AZITSOAFooter&ref_=sdit_soa
+          - listitem [ref=e454]:
+            - link "Vendi su Amazon Business" [ref=e455] [cursor=pointer]:
+              - /url: https://services.amazon.it/servizi/raggiungi-i-clienti-business/caratteristiche-e-vantaggi.html?ld=AZITB2BRetailFooter
+          - listitem [ref=e456]:
+            - link "Vendi su Amazon Handmade" [ref=e457] [cursor=pointer]:
+              - /url: https://services.amazon.it/handmade.htm?ref=azitsoafoo53331&ld=AZITHNDFooter
+          - listitem [ref=e458]:
+            - link "Costruisci e proteggi il tuo marchio" [ref=e459] [cursor=pointer]:
+              - /url: https://sell.amazon.it/titolari-di-marchi/?ref_=AOITABRLGNRFOOT&ld=AZITBrandRegFooter#inscrivi-il-tuo-marchio
+          - listitem [ref=e460]:
+            - link "Fornitura ad Amazon" [ref=e461] [cursor=pointer]:
+              - /url: https://supply.amazon.com/?ref_=footer_sta&lang=it-IT
+          - listitem [ref=e462]:
+            - link "Vendi a livello globale con Amazon" [ref=e463] [cursor=pointer]:
+              - /url: https://sell.amazon.it/vendi-a-livello-globale?ld=AZITSOA_weblabfooter
+          - listitem [ref=e464]:
+            - link "Diventa affiliato" [ref=e465] [cursor=pointer]:
+              - /url: https://programma-affiliazione.amazon.it
+          - listitem [ref=e466]:
+            - link "Logistica di Amazon" [ref=e467] [cursor=pointer]:
+              - /url: https://services.amazon.it/servizi/logistica-di-amazon/caratteristiche-e-vantaggi.html?ld=AZITFBAFooter
+          - listitem [ref=e468]:
+            - link "Pubblica con noi da indipendente" [ref=e469] [cursor=pointer]:
+              - /url: https://kdp.amazon.com/?language=it_IT
+          - listitem [ref=e470]:
+            - link "Amazon Pay" [ref=e471] [cursor=pointer]:
+              - /url: https://pay.amazon.com/it?ld=AWREFRAPAFooter
+          - listitem [ref=e472]:
+            - link "Promuovi i tuoi prodotti" [ref=e473] [cursor=pointer]:
+              - /url: https://advertising.amazon.it/products-self-serve?ref_=ext_amzn_ftr
+          - listitem [ref=e474]:
+            - link "Ospita un hub Amazon" [ref=e475] [cursor=pointer]:
+              - /url: https://www.amazon.it/b?node=10833679031
+          - listitem [ref=e476]:
+            - text: ›
+            - link "Scopri di più su Make Money with Us" [ref=e477] [cursor=pointer]:
+              - /url: https://www.amazon.it/b/?node=17751879031
+      - generic [ref=e479]:
+        - heading "Metodi di pagamento Amazon" [level=6] [ref=e480]
+        - list [ref=e481]:
+          - listitem [ref=e482]:
+            - link "Metodi di pagamento" [ref=e483] [cursor=pointer]:
+              - /url: /gp/help/customer/display.html?nodeId=201239010&ref_=footer_payment
+          - listitem [ref=e484]:
+            - link "Convertitore di Valuta Amazon" [ref=e485] [cursor=pointer]:
+              - /url: /gp/help/customer/display.html?nodeId=201239250&ref_=footer_tfx
+          - listitem [ref=e486]:
+            - link "Buoni Regalo" [ref=e487] [cursor=pointer]:
+              - /url: /gp/gc?ref_=footer_giftcards
+          - listitem [ref=e488]:
+            - link "Ricarica online" [ref=e489] [cursor=pointer]:
+              - /url: /gp/gc/create?ref_=footer_topup_it
+          - listitem [ref=e490]:
+            - link "Ricarica in cassa" [ref=e491] [cursor=pointer]:
+              - /url: /gp/browse.html?node=13829824031&ref_=footer_purchase_code
+          - listitem [ref=e492]:
+            - link "Carta Amazon Business Amex" [ref=e493] [cursor=pointer]:
+              - /url: /dp/B0B1VKXVYW?plattr=ACOMFO&ie=UTF-8&ref_=b2b_sow_sbcc_it_acom_omp_na_footer_nca_202210
+      - generic [ref=e495]:
+        - heading "Bisogno di aiuto?" [level=6] [ref=e496]
+        - list [ref=e497]:
+          - listitem [ref=e498]:
+            - link "Visualizza o traccia un ordine" [ref=e499] [cursor=pointer]:
+              - /url: /gp/css/order-history?ref_=footer_hp_ss_comp_tmp
+          - listitem [ref=e500]:
+            - link "Costi e modalità di spedizione" [ref=e501] [cursor=pointer]:
+              - /url: /gp/help/customer/display.html?nodeId=200522630&ref_=footer_shiprates
+          - listitem [ref=e502]:
+            - link "Amazon Prime" [ref=e503] [cursor=pointer]:
+              - /url: /gp/prime?ref_=footer_prime
+          - listitem [ref=e504]:
+            - link "Restituisci, sostituisci o recedi" [ref=e505] [cursor=pointer]:
+              - /url: /gp/css/returns/homepage.html?ref_=footer_hy_f_4
+          - listitem [ref=e506]:
+            - link "Riciclo" [ref=e507] [cursor=pointer]:
+              - /url: /gp/browse.html?node=22380244031&ref_=footer_disposal
+          - listitem [ref=e508]:
+            - link "I miei contenuti e dispositivi" [ref=e509] [cursor=pointer]:
+              - /url: /hz/mycd/myx?ref_=footer_myk
+          - listitem [ref=e510]:
+            - link "App Amazon Mobile" [ref=e511] [cursor=pointer]:
+              - /url: /gp/browse.html?node=4951392031&ref_=footer_mobapp
+          - listitem [ref=e512]:
+            - link "Richiami e avvisi di sicurezza del prodotto" [ref=e513] [cursor=pointer]:
+              - /url: https://www.amazon.it/your-product-safety-alerts?ref_=footer_bsx_ypsa
+          - listitem [ref=e514]:
+            - link "Servizio Clienti" [ref=e515] [cursor=pointer]:
+              - /url: /gp/help/customer/display.html?nodeId=200507590&ref_=footer_gw_m_b_cs
+          - listitem [ref=e516]:
+            - link "IVA e fatturazione" [ref=e517] [cursor=pointer]:
+              - /url: /gp/help/customer/display.html?nodeId=201239260&ref_=footer_vat
+          - listitem [ref=e518]:
+            - link "Garanzia legale" [ref=e519] [cursor=pointer]:
+              - /url: /gp/help/customer/display.html?nodeId=201495950&ref_=footer_lgrt
+          - listitem [ref=e520]:
+            - link "Accessibilità" [ref=e521] [cursor=pointer]:
+              - /url: https://www.amazon.it/gp/help/customer/display.html?nodeId=GUUVBZ8WGVFP8R8X&ref_=nav_foot_accessibility
+          - listitem [ref=e522]:
+            - link "Lista regali" [ref=e523] [cursor=pointer]:
+              - /url: /registries?ref_=nav_footer_registry_giftlist_desktop
+          - listitem [ref=e524]:
+            - link "Segnala contenuto illecito" [ref=e525] [cursor=pointer]:
+              - /url: /gp/help/customer/display.html?nodeId=TLtMJsPGBmJPpN3hvy&ref_=footer_report_illegal_content
+    - generic [ref=e527]:
+      - link "Amazon Italy Home" [ref=e530] [cursor=pointer]:
+        - /url: /ref=footer_logo
+      - generic [ref=e533]:
+        - generic [ref=e534]:
+          - link "Scegli una lingua per lo shopping. La selezione attuale è Italiano." [ref=e535] [cursor=pointer]:
+            - /url: /customer-preferences/edit?ie=UTF8&preferencesReturnUrl=%2F&ref_=footer_lang
+            - generic [ref=e537]: Italiano
+          - button "Espandi per cambiare lingua o Paese" [ref=e538] [cursor=pointer]
+        - button "Scegli un paese/area geografica per lo shopping. La selezione attuale è Italia." [ref=e539] [cursor=pointer]:
+          - generic [ref=e541]: Italia
+    - generic "Visualizza altro su Amazon" [ref=e542]:
+      - generic "Visualizza altro su Amazon" [ref=e543]:
+        - list [ref=e544]:
+          - listitem [ref=e545]:
+            - link "Amazon Advertising Trova, attira e coinvolgi i clienti" [ref=e546] [cursor=pointer]:
+              - /url: https://advertising.amazon.it/?ref=footer_advtsing_2_it
+              - heading "Amazon Advertising" [level=5] [ref=e547]
+              - generic [ref=e548]: Trova, attira e coinvolgi i clienti
+          - listitem [aria-hidden] [ref=e549]
+          - listitem [ref=e550]:
+            - link [ref=e551] [cursor=pointer]:
+              - /url: https://music.amazon.it/?ref=dm_aff_amz_it
+              - heading "Amazon Music" [level=5] [ref=e552]
+              - generic [ref=e553]: Streaming di milioni dicanzoni
+          - listitem [aria-hidden] [ref=e554]
+          - listitem [ref=e555]:
+            - link [ref=e556] [cursor=pointer]:
+              - /url: https://www.abebooks.it
+              - heading "AbeBooks" [level=5] [ref=e557]
+              - generic [ref=e558]: Libri, arte e articoli da collezione
+          - listitem [aria-hidden] [ref=e559]
+          - listitem [ref=e560]:
+            - link [ref=e561] [cursor=pointer]:
+              - /url: https://www.audible.it
+              - heading "Audible" [level=5] [ref=e562]
+              - generic [ref=e563]: DownloadAudiolibri
+          - listitem [aria-hidden] [ref=e564]
+          - listitem [ref=e565]:
+            - link [ref=e566] [cursor=pointer]:
+              - /url: https://aws.amazon.com/?sc_channel=EL&sc_campaign=IT_amazonfooter
+              - heading "Amazon Web Services" [level=5] [ref=e567]
+              - generic [ref=e568]: Servizi CloudScalabili
+        - list [ref=e569]:
+          - listitem [ref=e570]:
+            - link "Amazon Seconda mano I nostri prodotti usati e come nuovi" [ref=e571] [cursor=pointer]:
+              - /url: /gp/browse.html?node=3581999031&ref_=footer_wrhsdls
+              - heading "Amazon Seconda mano" [level=5] [ref=e572]
+              - generic [ref=e573]: I nostri prodotti usati e come nuovi
+          - listitem [aria-hidden] [ref=e574]
+          - listitem [ref=e575]:
+            - link [ref=e576] [cursor=pointer]:
+              - /url: https://kdp.amazon.com/?language=it_IT
+              - heading "Kindle Direct Publishing" [level=5] [ref=e577]
+              - generic [ref=e578]: Pubblica i tuoi libriin formato elettronico
+          - listitem [aria-hidden] [ref=e579]
+          - listitem [ref=e580]:
+            - link [ref=e581] [cursor=pointer]:
+              - /url: https://www.shopbop.com/it/welcome
+              - heading "Shopbop" [level=5] [ref=e582]
+              - generic [ref=e583]: Designer, Marche,Fashion e stile
+          - listitem [aria-hidden] [ref=e584]
+          - listitem [ref=e585]:
+            - link [ref=e586] [cursor=pointer]:
+              - /url: /gp/browse.html?node=14859625031&ref_=nav_footer_business
+              - heading "Amazon Business" [level=5] [ref=e587]
+              - generic [ref=e588]: Servizio perclienti business
+          - listitem [aria-hidden] [ref=e589]
+          - listitem [aria-hidden] [ref=e590]
+    - generic [ref=e591]:
+      - list [ref=e592]:
+        - listitem [ref=e593]:
+          - link "Condizioni generali di uso e vendita" [ref=e594] [cursor=pointer]:
+            - /url: /gp/help/customer/display.html?nodeId=200545940&ref_=footer_cou
+        - listitem [ref=e595]:
+          - link "Informativa sulla privacy" [ref=e596] [cursor=pointer]:
+            - /url: /gp/help/customer/display.html?nodeId=200545460&ref_=footer_privacy
+        - listitem [ref=e597]:
+          - link "Area legale" [ref=e598] [cursor=pointer]:
+            - /url: /gp/help/customer/display.html?nodeId=200571750&ref_=footer_legal_area
+        - listitem [ref=e599]:
+          - link "Cookie" [ref=e600] [cursor=pointer]:
+            - /url: /gp/help/customer/display.html?nodeId=201890250&ref_=footer_cookies_notice
+        - listitem [ref=e601]:
+          - link "Pubblicità definita in base agli interessi" [ref=e602] [cursor=pointer]:
+            - /url: /gp/help/customer/display.html?nodeId=201909150&ref_=footer_Interest_Based_Ads_Notice
+      - generic [ref=e603]: © 1996-2026 Amazon.com, Inc. o società affiliate

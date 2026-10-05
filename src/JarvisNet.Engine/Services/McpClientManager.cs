@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using JarvisNet.Engine.Infrastructure;
 using JarvisNet.Engine.Options;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,6 +19,16 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
     private readonly ILogger<McpClientManager> _logger;
     private readonly List<McpClient> _clients = [];
     private readonly Lock _clientLock = new();
+    private readonly Lock _turnGuardLock = new();
+    private readonly Dictionary<string, int> _toolCallsThisTurn = new(StringComparer.Ordinal);
+
+    /// <summary>Tools not registered (Chrome DevTools tab loops).</summary>
+    private static readonly HashSet<string> SuppressedToolNames =
+        new(StringComparer.OrdinalIgnoreCase) { "select_page", "list_pages" };
+
+    /// <summary>Only these tools use duplicate-call blocking (Playwright tools are excluded).</summary>
+    private static readonly HashSet<string> StrictLoopGuardToolNames =
+        new(StringComparer.OrdinalIgnoreCase) { "select_page", "list_pages" };
 
     public McpClientManager(
         Kernel kernel,
@@ -31,6 +43,15 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
     public event EventHandler<string>? McpToolExecutionStarted;
 
     public event EventHandler? McpToolExecutionCompleted;
+
+    /// <summary>Reset per-user-message tool counters (call before each LLM turn).</summary>
+    public void BeginUserTurn()
+    {
+        lock (_turnGuardLock)
+        {
+            _toolCallsThisTurn.Clear();
+        }
+    }
 
     public Task StartAsync(CancellationToken cancellationToken) =>
         ConnectAndRegisterToolsAsync(cancellationToken);
@@ -86,6 +107,11 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
 
             try
             {
+                if (string.Equals(serverKey, "Playwright", StringComparison.OrdinalIgnoreCase))
+                {
+                    await EnsurePlaywrightBrowserAsync(config, cancellationToken).ConfigureAwait(false);
+                }
+
                 await ConnectServerAsync(serverKey, config, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -100,12 +126,15 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
         McpServerConfig config,
         CancellationToken cancellationToken)
     {
+        var environment = BuildEnvironmentVariables(serverKey, config.Env);
+        var arguments = BuildServerArguments(serverKey, config.Args);
+        var command = NodeToolchainResolver.ResolveExecutable(config.Command);
         var transportOptions = new StdioClientTransportOptions
         {
             Name = serverKey,
-            Command = config.Command,
-            Arguments = config.Args,
-            EnvironmentVariables = BuildEnvironmentVariables(config.Env),
+            Command = command,
+            Arguments = arguments,
+            EnvironmentVariables = environment,
         };
 
         var transport = new StdioClientTransport(transportOptions);
@@ -123,6 +152,15 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
 
         foreach (var tool in tools)
         {
+            if (SuppressedToolNames.Contains(tool.Name))
+            {
+                _logger.LogInformation(
+                    "Server MCP {ServerKey}: tool {ToolName} non esposto al modello (anti-loop).",
+                    serverKey,
+                    tool.Name);
+                continue;
+            }
+
             var function = CreateKernelFunction(client, pluginName, tool);
             functions.Add(function);
         }
@@ -150,14 +188,34 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
         async Task<string> InvokeAsync(KernelArguments arguments, CancellationToken cancellationToken)
         {
             var displayName = $"{pluginName}.{toolName}";
+            var args = ToArgumentDictionary(arguments);
+            if (TryGetLoopGuardResponse(toolName, args, out var guardMessage))
+            {
+                _logger.LogWarning(
+                    "Server MCP {ServerKey}: bloccata ripetizione tool {ToolName}.",
+                    pluginName,
+                    toolName);
+                return guardMessage;
+            }
+
             McpToolExecutionStarted?.Invoke(this, displayName);
             try
             {
-                var args = ToArgumentDictionary(arguments);
                 var result = await client
                     .CallToolAsync(toolName, args, cancellationToken: cancellationToken)
                     .ConfigureAwait(false);
-                return ExtractToolResultText(result);
+                var text = ExtractToolResultText(result);
+                if (result.IsError == true
+                    || text.Contains("install", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("Executable doesn't exist", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning(
+                        "Tool MCP {ToolName} risposta: {Preview}",
+                        displayName,
+                        text.Length > 500 ? text[..500] + "…" : text);
+                }
+
+                return text;
             }
             finally
             {
@@ -237,6 +295,37 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
             _ => typeof(string),
         };
 
+    private bool TryGetLoopGuardResponse(
+        string toolName,
+        Dictionary<string, object?> args,
+        out string message)
+    {
+        if (!StrictLoopGuardToolNames.Contains(toolName))
+        {
+            message = string.Empty;
+            return false;
+        }
+
+        var signature = toolName + ":" + JsonSerializer.Serialize(args);
+        lock (_turnGuardLock)
+        {
+            _toolCallsThisTurn.TryGetValue(signature, out var count);
+            count++;
+            _toolCallsThisTurn[signature] = count;
+
+            if (count <= 1)
+            {
+                message = string.Empty;
+                return false;
+            }
+
+            message =
+                "Tool già eseguito con gli stessi parametri. Non richiamarlo di nuovo: "
+                + "passa al passo successivo (es. evaluate_js o fill) oppure rispondi all'utente in italiano.";
+            return true;
+        }
+    }
+
     private static Dictionary<string, object?> ToArgumentDictionary(KernelArguments arguments)
     {
         var dict = new Dictionary<string, object?>(StringComparer.Ordinal);
@@ -274,6 +363,8 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
             _ => element.GetRawText(),
         };
 
+    private const int MaxToolResultCharacters = 12_000;
+
     private static string ExtractToolResultText(CallToolResult result)
     {
         if (result.Content is null || result.Content.Count == 0)
@@ -287,33 +378,118 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
             .Where(text => !string.IsNullOrEmpty(text))
             .ToList();
 
+        string text;
         if (textParts.Count == 1)
         {
-            return textParts[0]!;
+            text = textParts[0]!;
         }
-
-        if (textParts.Count > 1)
+        else if (textParts.Count > 1)
         {
-            return JsonSerializer.Serialize(textParts);
+            text = JsonSerializer.Serialize(textParts);
+        }
+        else
+        {
+            text = JsonSerializer.Serialize(result.Content);
         }
 
-        return JsonSerializer.Serialize(result.Content);
+        if (text.Length <= MaxToolResultCharacters)
+        {
+            return text;
+        }
+
+        return text[..MaxToolResultCharacters]
+               + "\n…[output troncato per limiti contesto LLM]";
     }
 
-    private static Dictionary<string, string?> BuildEnvironmentVariables(Dictionary<string, string> env)
+    private static string[] BuildServerArguments(string serverKey, string[] configuredArgs)
     {
-        if (env.Count == 0)
+        if (!string.Equals(serverKey, "Playwright", StringComparison.OrdinalIgnoreCase))
         {
-            return new Dictionary<string, string?>(StringComparer.Ordinal);
+            return configuredArgs;
         }
 
+        var repoRoot = RepositoryRootLocator.Find(AppContext.BaseDirectory);
+        var playwrightConfigPath = Path.Combine(repoRoot, "config", "playwright-mcp.json");
+        if (!File.Exists(playwrightConfigPath))
+        {
+            return configuredArgs;
+        }
+
+        var args = new List<string>(configuredArgs)
+        {
+            "--config",
+            playwrightConfigPath,
+        };
+        return args.ToArray();
+    }
+
+    private static Dictionary<string, string?> BuildEnvironmentVariables(
+        string serverKey,
+        Dictionary<string, string> env)
+    {
         var merged = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var (key, value) in env)
         {
             merged[key] = value;
         }
 
+        if (string.Equals(serverKey, "Playwright", StringComparison.OrdinalIgnoreCase))
+        {
+            NodeToolchainResolver.PrependNodeToPath(merged);
+            if (!merged.ContainsKey("PLAYWRIGHT_BROWSERS_PATH"))
+            {
+                merged["PLAYWRIGHT_BROWSERS_PATH"] = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "ms-playwright");
+            }
+        }
+
         return merged;
+    }
+
+    private async Task EnsurePlaywrightBrowserAsync(McpServerConfig config, CancellationToken cancellationToken)
+    {
+        var environment = BuildEnvironmentVariables("Playwright", config.Env);
+        var npx = NodeToolchainResolver.ResolveExecutable(config.Command);
+        var psi = new ProcessStartInfo
+        {
+            FileName = npx,
+            Arguments = "-y --package=playwright --package=@playwright/mcp playwright install chrome chromium",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+        };
+
+        foreach (var (key, value) in environment)
+        {
+            psi.Environment[key] = value ?? string.Empty;
+        }
+
+        _logger.LogInformation("Verifica browser Playwright (Chrome/Chromium) per MCP…");
+
+        using var process = Process.Start(psi);
+        if (process is null)
+        {
+            _logger.LogWarning("Impossibile avviare playwright install.");
+            return;
+        }
+
+        var stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+        var stderr = await process.StandardError.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+
+        if (process.ExitCode != 0)
+        {
+            _logger.LogWarning(
+                "playwright install exit {ExitCode}. stderr: {Stderr}",
+                process.ExitCode,
+                string.IsNullOrWhiteSpace(stderr) ? stdout : stderr);
+        }
+        else
+        {
+            _logger.LogInformation("Browser Playwright pronti.");
+        }
     }
 
     private static string SanitizePluginName(string serverKey)

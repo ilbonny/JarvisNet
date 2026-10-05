@@ -1,8 +1,8 @@
 {
   "McpServers": {
-    "Chrome-Devtools": {
+    "Playwright": {
       "Command": "npx",
-      "Args": ["-y", "chrome-devtools-mcp@latest", "--autoConnect"],
+      "Args": ["-y", "@playwright/mcp@latest"],
       "Enabled": true,
       "Env": {}
     }

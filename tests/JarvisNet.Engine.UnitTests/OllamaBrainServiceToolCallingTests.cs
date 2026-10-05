@@ -213,7 +213,7 @@ public sealed class OllamaBrainServiceToolCallingTests
         return new OllamaBrainService(
             chatCompletion,
             kernel,
-            Microsoft.Extensions.Options.Options.Create(options),
+            options,
             NullLogger<OllamaBrainService>.Instance);
     }
 
