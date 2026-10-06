@@ -102,3 +102,6 @@ piper/
 *.bak
 *.tmp
 *.temp
+
+# VS Code C# Dev Tools - Auto-generated runners
+.vscodecsdt/Runners/

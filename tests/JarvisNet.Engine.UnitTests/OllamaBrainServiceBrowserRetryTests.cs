@@ -1,5 +1,7 @@
 using JarvisNet.Engine.Options;
 using JarvisNet.Engine.Services;
+using JarvisNet.Plugins.Sdk.Abstractions;
+using JarvisNet.SearchWeb;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
@@ -26,19 +28,24 @@ public sealed class OllamaBrainServiceBrowserRetryTests
         });
 
         var kernel = Kernel.CreateBuilder().Build();
+        IJarvisPluginTurnHandler[] handlers =
+        [
+            new SearchWebPluginTurnHandler(NullLogger<SearchWebPluginTurnHandler>.Instance),
+        ];
         var service = new OllamaBrainService(
             fake,
             kernel,
             new OllamaOptions { SystemPrompt = "system" },
             NullLogger<OllamaBrainService>.Instance,
-            new FakeMcpTurnScope());
+            new FakeJarvisTurnScope(),
+            handlers);
 
         await service.SendAsync("Fai una ricerca su booking.com").ConfigureAwait(false);
 
         Assert.That(fake.CallCount, Is.EqualTo(2));
     }
 
-    private sealed class FakeMcpTurnScope : IMcpTurnScope
+    private sealed class FakeJarvisTurnScope : IJarvisTurnScope
     {
         public int ToolsInvokedThisTurn { get; private set; }
 

@@ -1,4 +1,6 @@
 using JarvisNet.Engine.Options;
+using JarvisNet.Plugins.Sdk.Abstractions;
+using JarvisNet.Plugins.Sdk.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
@@ -13,7 +15,8 @@ public sealed class OllamaBrainService
     private readonly Kernel _kernel;
     private readonly OllamaOptions _options;
     private readonly ILogger<OllamaBrainService> _logger;
-    private readonly IMcpTurnScope? _mcpTurnScope;
+    private readonly IJarvisTurnScope _turnScope;
+    private readonly IReadOnlyList<IJarvisPluginTurnHandler> _pluginTurnHandlers;
     private readonly ChatHistory _history;
     private readonly object _historyLock = new();
 
@@ -21,14 +24,16 @@ public sealed class OllamaBrainService
         IChatCompletionService chatCompletion,
         Kernel kernel,
         IOptions<OllamaOptions> options,
-        IMcpTurnScope mcpTurnScope,
-        ILogger<OllamaBrainService> logger)
+        IJarvisTurnScope turnScope,
+        ILogger<OllamaBrainService> logger,
+        IEnumerable<IJarvisPluginTurnHandler>? pluginTurnHandlers = null)
     {
         _chatCompletion = chatCompletion;
         _kernel = kernel;
         _options = options.Value;
-        _mcpTurnScope = mcpTurnScope;
+        _turnScope = turnScope;
         _logger = logger;
+        _pluginTurnHandlers = pluginTurnHandlers?.ToList() ?? [];
         _history = CreateInitialHistory(_options.SystemPrompt);
     }
 
@@ -37,13 +42,15 @@ public sealed class OllamaBrainService
         Kernel kernel,
         OllamaOptions options,
         ILogger<OllamaBrainService> logger,
-        IMcpTurnScope? mcpTurnScope = null)
+        IJarvisTurnScope? turnScope = null,
+        IEnumerable<IJarvisPluginTurnHandler>? pluginTurnHandlers = null)
         : this(
             chatCompletion,
             kernel,
             Microsoft.Extensions.Options.Options.Create(options),
-            mcpTurnScope ?? NullMcpTurnScope.Instance,
-            logger)
+            turnScope ?? NullJarvisTurnScope.Instance,
+            logger,
+            pluginTurnHandlers)
     {
     }
 
@@ -101,9 +108,6 @@ public sealed class OllamaBrainService
             "Invio messaggio utente (voce) a Ollama ({Model}) con auto-invoke tool (non streaming SK/Ollama).",
             _options.ModelName);
 
-        // Ollama + GetStreamingChatMessageContentsAsync non esegue i tool MCP: il modello
-        // tende a stampare pseudo-codice nel testo. GetChatMessageContentAsync con kernel
-        // attiva l'auto-invoke di Semantic Kernel (FunctionChoiceBehavior.Auto).
         var assistantText = await CompleteAssistantTurnAsync(
                 userMessage.Trim(),
                 historySnapshot,
@@ -150,7 +154,7 @@ public sealed class OllamaBrainService
         ChatHistory historySnapshot,
         CancellationToken cancellationToken)
     {
-        _mcpTurnScope?.BeginUserTurn();
+        _turnScope.BeginUserTurn();
 
         var executionSettings = CreateExecutionSettings();
         var response = await _chatCompletion
@@ -158,24 +162,40 @@ public sealed class OllamaBrainService
             .ConfigureAwait(false);
 
         var assistantText = response.Content?.Trim() ?? string.Empty;
-        if (!BrowserResponseGuard.ShouldRetryWithoutTools(
-                userMessage,
-                assistantText,
-                _mcpTurnScope?.ToolsInvokedThisTurn ?? 0))
+
+        if (_pluginTurnHandlers.Count == 0)
         {
             return assistantText;
         }
 
-        _logger.LogWarning(
-            "Risposta web sospetta senza tool MCP (turno utente: {Preview}); ritento con nudge.",
-            userMessage.Length > 80 ? userMessage[..80] + "…" : userMessage);
+        var turnContext = new JarvisPluginTurnContext
+        {
+            UserMessage = userMessage,
+            AssistantText = assistantText,
+            TurnScope = _turnScope,
+            HistorySnapshot = historySnapshot,
+            Kernel = _kernel,
+            ChatCompletion = _chatCompletion,
+            ExecutionSettings = executionSettings,
+            Temperature = _options.Temperature,
+            Logger = _logger,
+            InvokeAssistantAsync = (history, ct) => InvokeAssistantAsync(history, executionSettings, ct),
+        };
 
-        _mcpTurnScope?.BeginUserTurn();
-        var retryHistory = CloneHistory(historySnapshot);
-        retryHistory.AddUserMessage(BrowserResponseGuard.ToolNudgeUserMessage);
+        var enhanced = await JarvisPluginTurnCoordinator
+            .TryEnhanceTurnAsync(_pluginTurnHandlers, turnContext, cancellationToken)
+            .ConfigureAwait(false);
 
-        response = await _chatCompletion
-            .GetChatMessageContentAsync(retryHistory, executionSettings, kernel: _kernel, cancellationToken)
+        return enhanced ?? assistantText;
+    }
+
+    private async Task<string> InvokeAssistantAsync(
+        ChatHistory history,
+        OpenAIPromptExecutionSettings executionSettings,
+        CancellationToken cancellationToken)
+    {
+        var response = await _chatCompletion
+            .GetChatMessageContentAsync(history, executionSettings, kernel: _kernel, cancellationToken)
             .ConfigureAwait(false);
 
         return response.Content?.Trim() ?? string.Empty;
@@ -188,9 +208,9 @@ public sealed class OllamaBrainService
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
         };
 
-    private sealed class NullMcpTurnScope : IMcpTurnScope
+    private sealed class NullJarvisTurnScope : IJarvisTurnScope
     {
-        public static readonly NullMcpTurnScope Instance = new();
+        public static readonly NullJarvisTurnScope Instance = new();
 
         public int ToolsInvokedThisTurn => 0;
 

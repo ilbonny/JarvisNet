@@ -15,4 +15,21 @@
     <ProjectReference Include="..\JarvisNet.Engine\JarvisNet.Engine.csproj" />
   </ItemGroup>
 
+  <Target Name="CopyJarvisSearchWebPlugin" AfterTargets="Build">
+    <PropertyGroup>
+      <_SearchWebPluginDll>$(MSBuildProjectDirectory)\..\JarvisNet.SearchWeb\bin\$(Configuration)\$(TargetFramework)\JarvisNet.SearchWeb.dll</_SearchWebPluginDll>
+    </PropertyGroup>
+    <MSBuild
+      Projects="$(MSBuildProjectDirectory)\..\JarvisNet.SearchWeb\JarvisNet.SearchWeb.csproj"
+      Properties="Configuration=$(Configuration)"
+      Targets="Build"
+      Condition="!Exists('$(_SearchWebPluginDll)')" />
+    <MakeDir Directories="$(OutputPath)Plugins" Condition="!Exists('$(OutputPath)Plugins')" />
+    <Copy
+      SourceFiles="$(_SearchWebPluginDll)"
+      DestinationFolder="$(OutputPath)Plugins"
+      SkipUnchangedFiles="true"
+      Condition="Exists('$(_SearchWebPluginDll)')" />
+  </Target>
+
 </Project>

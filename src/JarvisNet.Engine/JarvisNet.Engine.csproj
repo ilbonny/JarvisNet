@@ -3,7 +3,25 @@
   <ItemGroup>
     <ProjectReference Include="..\JarvisNet.Core\JarvisNet.Core.csproj" />
     <ProjectReference Include="..\JarvisNet.Audio\JarvisNet.Audio.csproj" />
+    <ProjectReference Include="..\JarvisNet.Plugins.Sdk\JarvisNet.Plugins.Sdk.csproj" />
   </ItemGroup>
+
+  <Target Name="CopyJarvisSearchWebPlugin" AfterTargets="Build">
+    <PropertyGroup>
+      <_SearchWebPluginDll>$(MSBuildThisFileDirectory)..\JarvisNet.SearchWeb\bin\$(Configuration)\$(TargetFramework)\JarvisNet.SearchWeb.dll</_SearchWebPluginDll>
+    </PropertyGroup>
+    <MSBuild
+      Projects="$(MSBuildThisFileDirectory)..\JarvisNet.SearchWeb\JarvisNet.SearchWeb.csproj"
+      Properties="Configuration=$(Configuration)"
+      Targets="Build"
+      Condition="!Exists('$(_SearchWebPluginDll)')" />
+    <MakeDir Directories="$(OutputPath)Plugins" Condition="!Exists('$(OutputPath)Plugins')" />
+    <Copy
+      SourceFiles="$(_SearchWebPluginDll)"
+      DestinationFolder="$(OutputPath)Plugins"
+      SkipUnchangedFiles="true"
+      Condition="Exists('$(_SearchWebPluginDll)')" />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.12" />

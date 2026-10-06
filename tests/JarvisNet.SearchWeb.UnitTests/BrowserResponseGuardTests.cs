@@ -1,6 +1,6 @@
-using JarvisNet.Engine.Services;
+using JarvisNet.SearchWeb;
 
-namespace JarvisNet.Engine.UnitTests;
+namespace JarvisNet.SearchWeb.UnitTests;
 
 [TestFixture]
 public sealed class BrowserResponseGuardTests

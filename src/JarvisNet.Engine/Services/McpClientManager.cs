@@ -12,7 +12,7 @@ using ModelContextProtocol.Protocol;
 
 namespace JarvisNet.Engine.Services;
 
-public sealed partial class McpClientManager : IHostedService, IAsyncDisposable, IMcpTurnScope
+public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
 {
     private readonly Kernel _kernel;
     private readonly McpOptions _options;
@@ -43,19 +43,6 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable,
     public event EventHandler<string>? McpToolExecutionStarted;
 
     public event EventHandler? McpToolExecutionCompleted;
-
-    public int ToolsInvokedThisTurn { get; private set; }
-
-    /// <summary>Reset per-user-message tool counters (call before each LLM turn).</summary>
-    public void BeginUserTurn()
-    {
-        lock (_turnGuardLock)
-        {
-            _toolCallsThisTurn.Clear();
-        }
-
-        ToolsInvokedThisTurn = 0;
-    }
 
     public Task StartAsync(CancellationToken cancellationToken) =>
         ConnectAndRegisterToolsAsync(cancellationToken);
@@ -202,7 +189,6 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable,
                 return guardMessage;
             }
 
-            ToolsInvokedThisTurn++;
             _logger.LogInformation("Tool MCP avviato: {ToolName}", displayName);
             McpToolExecutionStarted?.Invoke(this, displayName);
             try

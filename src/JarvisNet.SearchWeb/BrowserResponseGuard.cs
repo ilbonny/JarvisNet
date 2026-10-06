@@ -1,4 +1,4 @@
-namespace JarvisNet.Engine.Services;
+namespace JarvisNet.SearchWeb;
 
 internal static class BrowserResponseGuard
 {
@@ -14,10 +14,15 @@ internal static class BrowserResponseGuard
         }
 
         var text = userMessage.ToLowerInvariant();
+        if (InternetSearchAssist.IsInternetSearchRequest(userMessage))
+        {
+            return false;
+        }
+
         ReadOnlySpan<string> hints =
         [
-            "browser", "sito", "pagina", "apri", "cerca", "ricerca", "booking", "hotel",
-            "albergo", "amazon", "naviga", "internet", "clicca", "prenot", "destinazione",
+            "browser", "sito", "pagina", "apri", "booking", "hotel",
+            "albergo", "amazon", "naviga", "clicca", "prenot", "destinazione",
             "snapshot", "scheda", "tab ",
         ];
 
