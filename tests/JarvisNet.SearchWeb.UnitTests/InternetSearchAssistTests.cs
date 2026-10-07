@@ -31,4 +31,31 @@ public sealed class InternetSearchAssistTests
             InternetSearchAssist.IsInternetSearchRequest("cerca in internet i cavi hdmi"),
             Is.True);
     }
+
+    [Test]
+    public void TryBuildSearchQuery_ExtractsTopic_EnglishWebSearchPhrase()
+    {
+        var ok = InternetSearchAssist.TryBuildSearchQuery(
+            "Please search the web for today's news headlines",
+            out var query);
+
+        Assert.That(ok, Is.True);
+        Assert.That(query, Does.Contain("news").IgnoreCase);
+    }
+
+    [Test]
+    public void IsInternetSearchRequest_True_ForSpanishBuscarEnInternet()
+    {
+        Assert.That(
+            InternetSearchAssist.IsInternetSearchRequest("busca en internet cables HDMI"),
+            Is.True);
+    }
+
+    [Test]
+    public void TryBuildSearchQuery_Fails_WhenOnlyGenericSearchRequest_English()
+    {
+        var ok = InternetSearchAssist.TryBuildSearchQuery("Do a web search on the internet", out _);
+
+        Assert.That(ok, Is.False);
+    }
 }

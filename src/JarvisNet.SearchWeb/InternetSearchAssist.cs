@@ -1,45 +1,13 @@
-using System.Text.RegularExpressions;
-
 namespace JarvisNet.SearchWeb;
 
-internal static partial class InternetSearchAssist
+internal static class InternetSearchAssist
 {
     internal const string SearchToolNudgeUserMessage =
-        "Usa subito il tool SearchWeb-search_internet con una query concreta derivata dalla richiesta dell'utente. "
-        + "Non aprire il browser MCP per una semplice ricerca web.";
+        "Use the SearchWeb-search_internet tool immediately with a concrete query derived from the user request. "
+        + "Do not open the MCP browser for a simple web search.";
 
-    internal static bool IsInternetSearchRequest(string userMessage)
-    {
-        if (string.IsNullOrWhiteSpace(userMessage))
-        {
-            return false;
-        }
-
-        var text = userMessage.ToLowerInvariant();
-        if (text.Contains("cerca su internet", StringComparison.Ordinal)
-            || text.Contains("cerca in internet", StringComparison.Ordinal)
-            || text.Contains("ricerca su internet", StringComparison.Ordinal)
-            || text.Contains("ricerca in internet", StringComparison.Ordinal)
-            || text.Contains("cerca online", StringComparison.Ordinal)
-            || text.Contains("ricerca online", StringComparison.Ordinal)
-            || text.Contains("cerca sul web", StringComparison.Ordinal)
-            || text.Contains("ricerca sul web", StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        if (InternetSearchPattern().IsMatch(text))
-        {
-            return true;
-        }
-
-        return text.Contains("notizie", StringComparison.Ordinal)
-            && (text.Contains("oggi", StringComparison.Ordinal)
-                || text.Contains("internet", StringComparison.Ordinal)
-                || text.Contains("online", StringComparison.Ordinal)
-                || text.Contains("cerca", StringComparison.Ordinal)
-                || text.Contains("ricerca", StringComparison.Ordinal));
-    }
+    internal static bool IsInternetSearchRequest(string userMessage) =>
+        WebSearchLanguage.IsInternetSearchRequest(userMessage);
 
     internal static bool TryBuildSearchQuery(string userMessage, out string query)
     {
@@ -50,23 +18,12 @@ internal static partial class InternetSearchAssist
         }
 
         var text = userMessage.Trim();
-        text = SearchLeadPattern().Replace(text, string.Empty).Trim();
+        text = WebSearchLanguage.StripSearchLead(text);
         text = text.TrimStart('.', ',', ':', '-', '—', ' ');
 
-        if (text.StartsWith("per ", StringComparison.OrdinalIgnoreCase))
+        if (TryStripLeadingPreposition(ref text))
         {
-            text = text[4..].Trim();
-        }
-
-        if (text.StartsWith("del ", StringComparison.OrdinalIgnoreCase)
-            || text.StartsWith("dei ", StringComparison.OrdinalIgnoreCase)
-            || text.StartsWith("della ", StringComparison.OrdinalIgnoreCase)
-            || text.StartsWith("delle ", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!IsInternetSearchRequest(text))
-            {
-                return false;
-            }
+            // stripped "for / per / pour / para / um"
         }
 
         text = text.TrimEnd('.', '?', '!', '…');
@@ -77,8 +34,9 @@ internal static partial class InternetSearchAssist
         }
 
         if (text.Length < 2
-            || IsOnlySearchFiller(text)
-            || GenericSearchOnlyPattern().IsMatch(text))
+            || WebSearchLanguage.IsSearchFillerOnly(text)
+            || WebSearchLanguage.IsGenericSearchOnlyRequest(text)
+            || WebSearchLanguage.IsGenericSearchOnlyRequest(userMessage.Trim()))
         {
             return false;
         }
@@ -87,46 +45,33 @@ internal static partial class InternetSearchAssist
         return true;
     }
 
-    private static bool TryExtractNewsOnlyQuery(string userMessage, string strippedText, out string query)
+    private static bool TryStripLeadingPreposition(ref string text)
     {
-        query = string.Empty;
-        var source = strippedText;
-        if (string.IsNullOrWhiteSpace(source))
-        {
-            source = userMessage;
-        }
+        ReadOnlySpan<string> prefixes =
+        [
+            "for ", "to ", "about ", "per ", "pour ", "para ", "um ", "über ", "sur ",
+        ];
 
-        var match = NotizieRelativePattern().Match(source);
-        if (match.Success)
+        foreach (var prefix in prefixes)
         {
-            query = $"notizie {match.Groups[1].Value.Trim()}";
-            return true;
-        }
-
-        match = NotizieDirectPattern().Match(source);
-        if (match.Success)
-        {
-            query = match.Groups[1].Value.Trim();
-            return query.Length >= 3;
+            if (text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                text = text[prefix.Length..].TrimStart();
+                return true;
+            }
         }
 
         return false;
     }
 
-    private static bool IsOnlySearchFiller(string text)
+    private static bool TryExtractNewsOnlyQuery(string userMessage, string strippedText, out string query)
     {
-        ReadOnlySpan<string> fillers =
-        [
-            "ora", "adesso", "solo", "qualcosa", "qualche cosa", "cosa", "un argomento", "un topic",
-        ];
+        query = string.Empty;
+        var source = string.IsNullOrWhiteSpace(strippedText) ? userMessage : strippedText;
 
-        var normalized = text.Trim().ToLowerInvariant();
-        foreach (var filler in fillers)
+        if (WebSearchLanguage.TryExtractNewsTopic(source, out query))
         {
-            if (normalized.Equals(filler, StringComparison.Ordinal))
-            {
-                return true;
-            }
+            return true;
         }
 
         return false;
@@ -141,30 +86,4 @@ internal static partial class InternetSearchAssist
         && IsInternetSearchRequest(userMessage)
         && TryBuildSearchQuery(userMessage, out _)
         && string.IsNullOrWhiteSpace(assistantText);
-
-    [GeneratedRegex(@"(cerca|ricerca|cercare).{0,24}(internet|online|web|rete)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    private static partial Regex InternetSearchPattern();
-
-    [GeneratedRegex(
-        @"(?i)^(?:\s*(?:allora|ora|adesso|per favore|puoi|potresti|vorrei che)\s+)*"
-        + @"(?:fai\s+)?(?:una\s+)?(?:ricerca|cerca(?:re)?)\s+"
-        + @"(?:su\s+|in\s+|sul\s+|sull['’]?\s*|nell['’]?\s*)?"
-        + @"(?:internet|web|online|rete)\s*"
-        + @"(?:per\s+(?:vedere|sapere|conoscere|capire|controllare))?\s*"
-        + @"(?:quali\s+sono\s+(?:le\s+|i\s+|gli\s+)?)?",
-        RegexOptions.CultureInvariant)]
-    private static partial Regex SearchLeadPattern();
-
-    [GeneratedRegex(
-        @"(?i)^(?:ora\s+|adesso\s+)?(?:fai\s+)?(?:una\s+)?(?:ricerca|cerca(?:re)?)\s+(?:su\s+|in\s+|sul\s+)?(?:internet|web|online|rete)\s*$",
-        RegexOptions.CultureInvariant)]
-    private static partial Regex GenericSearchOnlyPattern();
-
-    [GeneratedRegex(@"(?i)(?:le\s+)?notizie\s+relative\s+(?:alle?\s+|ai\s+)(.+)$", RegexOptions.CultureInvariant)]
-    private static partial Regex NotizieRelativePattern();
-
-    [GeneratedRegex(
-        @"(?i)^(?:le\s+)?((?:ultime\s+)?notizie(?:\s+(?:di\s+)?oggi|\s+attuali|\s+principali)?(?:\s+.+)?)$",
-        RegexOptions.CultureInvariant)]
-    private static partial Regex NotizieDirectPattern();
 }

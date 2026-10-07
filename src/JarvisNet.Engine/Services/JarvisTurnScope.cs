@@ -36,12 +36,12 @@ public sealed class JarvisTurnScope : IJarvisTurnScope, IFunctionInvocationFilte
             var query = TryGetSearchQuery(context);
             if (string.IsNullOrWhiteSpace(query))
             {
-                _logger.LogInformation("Tool ricerca internet avviato: {ToolName}", displayName);
+                _logger.LogInformation("Internet search tool started: {ToolName}", displayName);
             }
             else
             {
                 _logger.LogInformation(
-                    "Tool ricerca internet avviato: {ToolName} (query: {Query})",
+                    "Internet search tool started: {ToolName} (query: {Query})",
                     displayName,
                     query);
             }

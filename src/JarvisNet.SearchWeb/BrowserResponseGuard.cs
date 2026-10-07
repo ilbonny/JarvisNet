@@ -1,10 +1,13 @@
+using System.Text.RegularExpressions;
+
 namespace JarvisNet.SearchWeb;
 
-internal static class BrowserResponseGuard
+internal static partial class BrowserResponseGuard
 {
+    /// <summary>Istruzione neutra (inglese): i modelli multilingue la seguono bene.</summary>
     internal const string ToolNudgeUserMessage =
-        "Usa adesso i tool del browser registrati per navigare o leggere la pagina. "
-        + "Non inventare hotel, prezzi, punteggi o liste: riporta solo ciò che vedi dopo i tool.";
+        "Use the registered browser tools now to navigate or read the page. "
+        + "Do not invent hotels, prices, ratings, or result lists—only report what you see after using tools.";
 
     internal static bool LikelyWebUserIntent(string userMessage)
     {
@@ -13,28 +16,37 @@ internal static class BrowserResponseGuard
             return false;
         }
 
-        var text = userMessage.ToLowerInvariant();
         if (InternetSearchAssist.IsInternetSearchRequest(userMessage))
         {
             return false;
         }
 
-        ReadOnlySpan<string> hints =
+        var text = userMessage.AsSpan();
+        if (ContainsUrlOrDomain(text))
+        {
+            return true;
+        }
+
+        var lower = userMessage.ToLowerInvariant();
+        ReadOnlySpan<string> browserHints =
         [
-            "browser", "sito", "pagina", "apri", "booking", "hotel",
-            "albergo", "amazon", "naviga", "clicca", "prenot", "destinazione",
-            "snapshot", "scheda", "tab ",
+            "browser", "webpage", "web page", "website", "web site", "snapshot",
+            "navigate", "navigation", "click", "booking.com", "amazon.",
+            "playwright", "http://", "https://", "www.",
+            // lessici comuni (non esclusivi)
+            "open ", "visit ", "goto ", "go to ",
+            "tab ", "page ",
         ];
 
-        foreach (var hint in hints)
+        foreach (var hint in browserHints)
         {
-            if (text.Contains(hint, StringComparison.Ordinal))
+            if (lower.Contains(hint, StringComparison.Ordinal))
             {
                 return true;
             }
         }
 
-        return false;
+        return BrowserActionVerbPattern().IsMatch(lower);
     }
 
     internal static bool LooksLikeFabricatedBrowserAnswer(string assistantText)
@@ -44,59 +56,129 @@ internal static class BrowserResponseGuard
             return false;
         }
 
-        var text = assistantText.ToLowerInvariant();
-
-        ReadOnlySpan<string> refusalOrGuide =
-        [
-            "non posso navigare",
-            "non posso accedere",
-            "ti guiderò",
-            "passaggi che dovresti",
-            "simulare questi passaggi",
-            "simuli questo",
-        ];
-
-        foreach (var phrase in refusalOrGuide)
-        {
-            if (text.Contains(phrase, StringComparison.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        ReadOnlySpan<string> falseCompletion =
-        [
-            "è ora aperto",
-            "è stato aperto",
-            "è stata effettuata",
-            "ricerca è stata",
-            "browser è ora",
-            "browser è stato",
-            "ecco i risultati",
-            "[dettagli]",
-            "albergo 1",
-            "**albergo",
-        ];
-
-        foreach (var phrase in falseCompletion)
-        {
-            if (text.Contains(phrase, StringComparison.Ordinal))
-            {
-                return true;
-            }
-        }
-
-        if (text.Contains("punteggio", StringComparison.Ordinal)
-            && text.Any(char.IsDigit))
+        if (HasPlaceholderOrTemplateMarkers(assistantText))
         {
             return true;
         }
 
-        return text.Contains('€') && text.Any(char.IsDigit);
+        if (HasMarkdownResultListPattern(assistantText))
+        {
+            return true;
+        }
+
+        if (HasPriceOrRatingPattern(assistantText))
+        {
+            return true;
+        }
+
+        var lower = assistantText.ToLowerInvariant();
+        if (FabricatedCompletionPattern().IsMatch(lower))
+        {
+            return true;
+        }
+
+        return RefusalInsteadOfToolPattern().IsMatch(lower);
     }
 
     internal static bool ShouldRetryWithoutTools(string userMessage, string assistantText, int toolsInvoked) =>
         toolsInvoked == 0
         && LikelyWebUserIntent(userMessage)
         && LooksLikeFabricatedBrowserAnswer(assistantText);
+
+    private static bool ContainsUrlOrDomain(ReadOnlySpan<char> text) =>
+        UrlLikePattern().IsMatch(text);
+
+    private static bool HasPlaceholderOrTemplateMarkers(string text)
+    {
+        if (BracketPlaceholderPattern().IsMatch(text))
+        {
+            return true;
+        }
+
+        return text.Contains("[details]", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("[dettagli]", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("lorem ipsum", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool HasMarkdownResultListPattern(string text)
+    {
+        if (MarkdownBoldListItemPattern().IsMatch(text))
+        {
+            return true;
+        }
+
+        var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var listLikeLines = 0;
+        foreach (var line in lines)
+        {
+            if (line.StartsWith('-') || line.StartsWith('*') || NumberedListLinePattern().IsMatch(line))
+            {
+                listLikeLines++;
+            }
+        }
+
+        return listLikeLines >= 2;
+    }
+
+    private static bool HasPriceOrRatingPattern(string text)
+    {
+        if (CurrencyWithAmountPattern().IsMatch(text))
+        {
+            return true;
+        }
+
+        return RatingPattern().IsMatch(text);
+    }
+
+    [GeneratedRegex(@"(https?://|www\.)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex UrlLikePattern();
+
+    [GeneratedRegex(
+        @"\b(open(ed)?|visit(ed)?|navigate(d)?|browse(d)?|click(ed)?|go to|goto)\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex BrowserActionVerbPattern();
+
+    [GeneratedRegex(@"\[[^\]]{3,}\]", RegexOptions.CultureInvariant)]
+    private static partial Regex BracketPlaceholderPattern();
+
+    [GeneratedRegex(@"^\s*[-*]\s+\*\*", RegexOptions.Multiline | RegexOptions.CultureInvariant)]
+    private static partial Regex MarkdownBoldListItemPattern();
+
+    [GeneratedRegex(@"^\s*\d+[.)]\s+", RegexOptions.Multiline | RegexOptions.CultureInvariant)]
+    private static partial Regex NumberedListLinePattern();
+
+    [GeneratedRegex(@"[$€£¥]\s*\d|\d\s*[$€£¥]", RegexOptions.CultureInvariant)]
+    private static partial Regex CurrencyWithAmountPattern();
+
+    [GeneratedRegex(
+        @"\b\d([,.]\d+)?\s*(/10|/5|stars?|★|⭐)\b|\b(rating|score|punteggio|valutazione)\s*:?\s*\d",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex RatingPattern();
+
+    [GeneratedRegex(
+        @"\b("
+        + @"browser\s+(is|'s)\s+(now\s+)?open(ed)?"
+        + @"|site\s+(is|'s)\s+open(ed)?"
+        + @"|here\s+are\s+the\s+results"
+        + @"|search\s+(was|has\s+been)\s+(completed|done|performed)"
+        + @"|results\s*:"
+        + @"|ecco\s+i\s+risultati"
+        + @"|(?:è|e)\s+(?:ora\s+)?(?:aperto|aperta|stato\s+aperto)"
+        + @"|est[aá]\s+abierto"
+        + @"|est\s+ouvert"
+        + @"|wurde\s+ge(?:öffnet|offnet)"
+        + @")\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex FabricatedCompletionPattern();
+
+    [GeneratedRegex(
+        @"\b(i\s+can'?t|cannot|unable\s+to)\s+(browse|navigate|access)"
+        + @"|non\s+posso\s+(navigare|accedere)"
+        + @"|no\s+puedo\s+(navegar|acceder)"
+        + @"|je\s+ne\s+peux\s+pas\s+(naviguer|accéder)"
+        + @"|ich\s+kann\s+nicht\s+(surfen|navigieren|zugreifen)"
+        + @"|\b(i\s+will|let\s+me)\s+guide\s+you\b"
+        + @"|simulate\s+(these\s+)?steps",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex RefusalInsteadOfToolPattern();
 }

@@ -14,6 +14,15 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.Configure<PluginOptions>(configuration.GetSection(PluginOptions.SectionName));
+        services.Configure<JarvisLocaleOptions>(configuration.GetSection(JarvisLocaleOptions.SectionName));
+        services.PostConfigure<JarvisLocaleOptions>(options =>
+        {
+            if (string.IsNullOrWhiteSpace(options.CultureName))
+            {
+                options.CultureName = JarvisLocaleResolver.ResolveCultureName(configuration);
+            }
+        });
+
         var pluginOptions = configuration.GetSection(PluginOptions.SectionName).Get<PluginOptions>()
             ?? new PluginOptions();
         services.AddJarvisPluginHostConfiguration(PluginFolderResolver.Resolve(pluginOptions));

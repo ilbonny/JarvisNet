@@ -20,4 +20,20 @@ public sealed class SearchQueryNormalizerTests
     {
         Assert.That(SearchQueryNormalizer.PreferTopHeadlinesFeed("notizie attuali"), Is.True);
     }
+
+    [Test]
+    public void Normalize_StripsSearchLead_EnglishNewsRequest()
+    {
+        var normalized = SearchQueryNormalizer.Normalize(
+            "Please do a web search for the latest news today");
+
+        Assert.That(normalized, Does.Contain("news").IgnoreCase);
+        Assert.That(normalized, Does.Not.Contain("internet").IgnoreCase);
+    }
+
+    [Test]
+    public void PreferTopHeadlinesFeed_True_ForEnglishHeadlinesOnly()
+    {
+        Assert.That(SearchQueryNormalizer.PreferTopHeadlinesFeed("today's news"), Is.True);
+    }
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using JarvisNet.SearchWeb.Models;
@@ -5,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace JarvisNet.SearchWeb;
 
-internal sealed class DuckDuckGoSearchService
+public sealed class DuckDuckGoSearchService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -15,14 +16,19 @@ internal sealed class DuckDuckGoSearchService
     private readonly HttpClient _httpClient;
     private readonly ILogger<DuckDuckGoSearchService> _logger;
     private readonly GoogleNewsRssSearchService? _newsSearch;
+    private readonly CultureInfo _culture;
+    private readonly SearchResultLabels _labels;
 
     public DuckDuckGoSearchService(
         HttpClient httpClient,
         ILogger<DuckDuckGoSearchService> logger,
+        CultureInfo culture,
         GoogleNewsRssSearchService? newsSearch = null)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _culture = culture;
+        _labels = SearchResultLabelsForCulture.Get(culture);
         _newsSearch = newsSearch;
     }
 
@@ -31,15 +37,17 @@ internal sealed class DuckDuckGoSearchService
         var trimmed = SearchQueryNormalizer.Normalize(query.Trim());
         if (string.IsNullOrEmpty(trimmed))
         {
-            return "Query di ricerca vuota.";
+            return _labels.EmptyQuery;
         }
 
         maxRelatedTopics = Math.Clamp(maxRelatedTopics, 1, 15);
 
+        var kl = WebSearchLocaleParameters.ToDuckDuckGoKl(_culture);
         var requestUri =
-            $"?q={Uri.EscapeDataString(trimmed)}&format=json&no_html=1&skip_disambig=1&kl=it-it";
+            $"?q={Uri.EscapeDataString(trimmed)}&format=json&no_html=1&skip_disambig=1"
+            + (string.IsNullOrEmpty(kl) ? string.Empty : $"&kl={Uri.EscapeDataString(kl)}");
 
-        _logger.LogInformation("Ricerca DuckDuckGo: {Query}", trimmed);
+        _logger.LogInformation("DuckDuckGo search: {Query} (culture {Culture})", trimmed, _culture.Name);
 
         using var response = await _httpClient
             .GetAsync(requestUri, cancellationToken)
@@ -48,10 +56,10 @@ internal sealed class DuckDuckGoSearchService
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning(
-                "DuckDuckGo HTTP {StatusCode} per query {Query}.",
+                "DuckDuckGo HTTP {StatusCode} for query {Query}.",
                 (int)response.StatusCode,
                 trimmed);
-            return $"Ricerca non riuscita (HTTP {(int)response.StatusCode}).";
+            return string.Format(_labels.SearchFailed, (int)response.StatusCode);
         }
 
         await using var stream = await response.Content
@@ -64,10 +72,10 @@ internal sealed class DuckDuckGoSearchService
 
         if (payload is null)
         {
-            return "Risposta DuckDuckGo non interpretabile.";
+            return _labels.UnableToParse;
         }
 
-        var instant = FormatAnswer(trimmed, payload, maxRelatedTopics);
+        var instant = FormatAnswer(trimmed, payload, maxRelatedTopics, _labels);
         if (HasSubstantiveInstantAnswer(payload) || _newsSearch is null)
         {
             return instant;
@@ -96,28 +104,32 @@ internal sealed class DuckDuckGoSearchService
         || !string.IsNullOrWhiteSpace(payload.AbstractText)
         || payload.RelatedTopics.Count > 0;
 
-    internal static string FormatAnswer(string query, DuckDuckGoInstantAnswer payload, int maxRelatedTopics)
+    internal static string FormatAnswer(
+        string query,
+        DuckDuckGoInstantAnswer payload,
+        int maxRelatedTopics,
+        SearchResultLabels labels)
     {
         var builder = new StringBuilder();
-        builder.AppendLine($"Ricerca internet (DuckDuckGo Instant Answer) per: \"{query}\"");
+        builder.AppendLine(string.Format(labels.WebSearchHeader, query));
 
         if (!string.IsNullOrWhiteSpace(payload.Answer))
         {
             builder.AppendLine();
-            builder.Append("Risposta diretta: ").AppendLine(payload.Answer.Trim());
+            builder.Append(labels.DirectAnswer).Append(' ').AppendLine(payload.Answer.Trim());
             if (!string.IsNullOrWhiteSpace(payload.AnswerType))
             {
-                builder.AppendLine($"Tipo: {payload.AnswerType.Trim()}");
+                builder.AppendLine($"{labels.Type} {payload.AnswerType.Trim()}");
             }
         }
 
         if (!string.IsNullOrWhiteSpace(payload.Definition))
         {
             builder.AppendLine();
-            builder.Append("Definizione: ").AppendLine(payload.Definition.Trim());
+            builder.Append(labels.Definition).Append(' ').AppendLine(payload.Definition.Trim());
             if (!string.IsNullOrWhiteSpace(payload.DefinitionURL))
             {
-                builder.AppendLine($"Fonte: {payload.DefinitionURL.Trim()}");
+                builder.AppendLine($"{labels.Source} {payload.DefinitionURL.Trim()}");
             }
         }
 
@@ -132,7 +144,7 @@ internal sealed class DuckDuckGoSearchService
             builder.AppendLine(payload.AbstractText.Trim());
             if (!string.IsNullOrWhiteSpace(payload.AbstractSource))
             {
-                builder.Append("Fonte: ").Append(payload.AbstractSource.Trim());
+                builder.Append(labels.Source).Append(' ').Append(payload.AbstractSource.Trim());
             }
 
             if (!string.IsNullOrWhiteSpace(payload.AbstractURL))
@@ -149,7 +161,7 @@ internal sealed class DuckDuckGoSearchService
         if (relatedLines.Count > 0)
         {
             builder.AppendLine();
-            builder.AppendLine("Argomenti correlati:");
+            builder.AppendLine(labels.RelatedTopics);
             foreach (var line in relatedLines)
             {
                 builder.AppendLine("- " + line);
@@ -162,10 +174,7 @@ internal sealed class DuckDuckGoSearchService
             && relatedLines.Count == 0)
         {
             builder.AppendLine();
-            builder.AppendLine(
-                "Nessun riassunto istantaneo per questa query. "
-                + "L'API DuckDuckGo non restituisce risultati web completi come un motore di ricerca classico; "
-                + "prova a riformulare la domanda in modo più specifico.");
+            builder.AppendLine(labels.NoInstantAnswer);
         }
 
         return builder.ToString().TrimEnd();

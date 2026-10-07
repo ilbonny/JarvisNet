@@ -6,7 +6,7 @@ namespace JarvisNet.SearchWeb.UnitTests;
 public sealed class BrowserResponseGuardTests
 {
     [Test]
-    public void ShouldRetry_WhenBookingAnswerWithoutTools()
+    public void ShouldRetry_WhenBookingAnswerWithoutTools_Italian()
     {
         var user = "cerca un hotel su booking.com a Los Cristianos";
         var assistant =
@@ -18,10 +18,22 @@ public sealed class BrowserResponseGuardTests
     }
 
     [Test]
+    public void ShouldRetry_WhenBookingAnswerWithoutTools_English()
+    {
+        var user = "open booking.com and find hotels in Madrid";
+        var assistant =
+            "The browser is now open. Here are the results:\n- **Hotel 1**: [Details] — $120";
+
+        Assert.That(
+            BrowserResponseGuard.ShouldRetryWithoutTools(user, assistant, toolsInvoked: 0),
+            Is.True);
+    }
+
+    [Test]
     public void ShouldNotRetry_WhenToolsWereUsed()
     {
-        var user = "apri booking.com";
-        var assistant = "Ecco i risultati:\n- **Albergo 1**: [Dettagli]";
+        var user = "open booking.com";
+        var assistant = "Here are the results:\n- **Hotel 1**: [Details]";
 
         Assert.That(
             BrowserResponseGuard.ShouldRetryWithoutTools(user, assistant, toolsInvoked: 2),
@@ -32,7 +44,7 @@ public sealed class BrowserResponseGuardTests
     public void ShouldNotRetry_ForUnrelatedSmallTalk()
     {
         Assert.That(
-            BrowserResponseGuard.ShouldRetryWithoutTools("come stai?", "Bene, grazie.", toolsInvoked: 0),
+            BrowserResponseGuard.ShouldRetryWithoutTools("how are you?", "Fine, thanks.", toolsInvoked: 0),
             Is.False);
     }
 }

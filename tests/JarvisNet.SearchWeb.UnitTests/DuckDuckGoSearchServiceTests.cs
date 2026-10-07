@@ -21,7 +21,8 @@ public sealed class DuckDuckGoSearchServiceTests
             ],
         };
 
-        var text = DuckDuckGoSearchService.FormatAnswer("javascript", payload, 5);
+        var labels = SearchResultLabelsForCulture.Get(System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+        var text = DuckDuckGoSearchService.FormatAnswer("javascript", payload, 5, labels);
 
         Assert.That(text, Does.Contain("JavaScript"));
         Assert.That(text, Does.Contain("Linguaggio di programmazione"));

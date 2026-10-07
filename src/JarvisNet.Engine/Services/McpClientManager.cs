@@ -312,8 +312,8 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
             }
 
             message =
-                "Tool già eseguito con gli stessi parametri. Non richiamarlo di nuovo: "
-                + "passa al passo successivo (es. evaluate_js o fill) oppure rispondi all'utente in italiano.";
+                "Tool already executed with the same parameters. Do not call it again: "
+                + "move to the next step (e.g. evaluate_js or fill) or reply to the user in their language.";
             return true;
         }
     }

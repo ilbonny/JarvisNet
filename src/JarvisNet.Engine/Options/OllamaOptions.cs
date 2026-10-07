@@ -9,7 +9,7 @@ public sealed class OllamaOptions
     public string ModelName { get; set; } = "jarvis:1b-new";
 
     public string SystemPrompt { get; set; } =
-        "Sei JarvisNet, un assistente vocale italiano efficiente, conciso e diretto. Rispondi sempre in modo breve e naturale per la sintesi vocale.";
+        "You are JarvisNet, a concise voice assistant. Reply briefly and naturally for text-to-speech, in the same language as the user.";
 
     public float Temperature { get; set; } = 0.7f;
 }

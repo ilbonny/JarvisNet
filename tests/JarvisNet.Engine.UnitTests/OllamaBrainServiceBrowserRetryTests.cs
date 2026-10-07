@@ -1,8 +1,10 @@
 using JarvisNet.Engine.Options;
 using JarvisNet.Engine.Services;
 using JarvisNet.Plugins.Sdk.Abstractions;
+using JarvisNet.Plugins.Sdk.Options;
 using JarvisNet.SearchWeb;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
@@ -17,7 +19,7 @@ public sealed class OllamaBrainServiceBrowserRetryTests
         var fake = new FakeChatCompletionService((history, _, _) =>
         {
             var last = history.Last().Content ?? string.Empty;
-            if (last.Contains("Non inventare hotel", StringComparison.Ordinal))
+            if (last.Contains("Do not invent hotels", StringComparison.Ordinal))
             {
                 return new ChatMessageContent(AuthorRole.Assistant, "Sto aprendo il browser.");
             }
@@ -30,7 +32,9 @@ public sealed class OllamaBrainServiceBrowserRetryTests
         var kernel = Kernel.CreateBuilder().Build();
         IJarvisPluginTurnHandler[] handlers =
         [
-            new SearchWebPluginTurnHandler(NullLogger<SearchWebPluginTurnHandler>.Instance),
+            new SearchWebPluginTurnHandler(
+                NullLogger<SearchWebPluginTurnHandler>.Instance,
+                Microsoft.Extensions.Options.Options.Create(new JarvisLocaleOptions { CultureName = "it-IT" })),
         ];
         var service = new OllamaBrainService(
             fake,

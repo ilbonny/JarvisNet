@@ -1,18 +1,26 @@
+using System.Globalization;
 using System.Text;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace JarvisNet.SearchWeb;
 
-internal sealed class GoogleNewsRssSearchService
+public sealed class GoogleNewsRssSearchService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<GoogleNewsRssSearchService> _logger;
+    private readonly CultureInfo _culture;
+    private readonly SearchResultLabels _labels;
 
-    public GoogleNewsRssSearchService(HttpClient httpClient, ILogger<GoogleNewsRssSearchService> logger)
+    public GoogleNewsRssSearchService(
+        HttpClient httpClient,
+        ILogger<GoogleNewsRssSearchService> logger,
+        CultureInfo culture)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _culture = culture;
+        _labels = SearchResultLabelsForCulture.Get(culture);
     }
 
     public async Task<string?> TryFetchHeadlinesAsync(
@@ -22,14 +30,16 @@ internal sealed class GoogleNewsRssSearchService
     {
         maxItems = Math.Clamp(maxItems, 1, 12);
         var useTopFeed = SearchQueryNormalizer.PreferTopHeadlinesFeed(query);
+        var locale = WebSearchLocaleParameters.ToGoogleNews(_culture).QueryString;
         var requestUri = useTopFeed
-            ? "rss?hl=it&gl=IT&ceid=IT:it"
-            : $"rss/search?q={Uri.EscapeDataString(query)}&hl=it&gl=IT&ceid=IT:it";
+            ? $"rss?{locale}"
+            : $"rss/search?q={Uri.EscapeDataString(query)}&{locale}";
 
         _logger.LogInformation(
-            "Google News RSS ({FeedType}) per: {Query}",
-            useTopFeed ? "principali" : "ricerca",
-            query);
+            "Google News RSS ({FeedType}) for: {Query} (culture {Culture})",
+            useTopFeed ? "top" : "search",
+            query,
+            _culture.Name);
 
         using var response = await _httpClient
             .GetAsync(requestUri, cancellationToken)
@@ -53,8 +63,8 @@ internal sealed class GoogleNewsRssSearchService
 
         var builder = new StringBuilder();
         builder.AppendLine(useTopFeed
-            ? "Titoli di attualità (Google News Italia):"
-            : $"Titoli di attualità per \"{query}\" (Google News):");
+            ? _labels.HeadlinesTop
+            : string.Format(_labels.HeadlinesForQuery, query));
         foreach (var item in items)
         {
             builder.Append("- ").AppendLine(item);

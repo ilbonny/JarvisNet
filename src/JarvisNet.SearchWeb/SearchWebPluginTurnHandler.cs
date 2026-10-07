@@ -1,6 +1,10 @@
+using System.Globalization;
 using JarvisNet.Plugins.Sdk;
 using JarvisNet.Plugins.Sdk.Abstractions;
+using JarvisNet.Plugins.Sdk.Infrastructure;
+using JarvisNet.Plugins.Sdk.Options;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
@@ -10,10 +14,14 @@ namespace JarvisNet.SearchWeb;
 public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
 {
     private readonly ILogger<SearchWebPluginTurnHandler> _logger;
+    private readonly CultureInfo _responseCulture;
 
-    public SearchWebPluginTurnHandler(ILogger<SearchWebPluginTurnHandler> logger)
+    public SearchWebPluginTurnHandler(
+        ILogger<SearchWebPluginTurnHandler> logger,
+        IOptions<JarvisLocaleOptions> localeOptions)
     {
         _logger = logger;
+        _responseCulture = JarvisLocaleResolver.CreateCulture(localeOptions.Value.CultureName);
     }
 
     public Task<JarvisPluginTurnOutcome?> TryEnhanceTurnAsync(
@@ -43,7 +51,7 @@ public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
         if (InternetSearchAssist.ShouldNudgeSearchTool(userMessage, assistantText, toolsInvoked))
         {
             context.Logger.LogInformation(
-                "Ricerca internet senza tool SearchWeb; ritento con nudge (query: {Preview}).",
+                "Web search without SearchWeb tool; retrying with nudge (query: {Preview}).",
                 userMessage.Length > 80 ? userMessage[..80] + "…" : userMessage);
 
             context.TurnScope.BeginUserTurn();
@@ -79,7 +87,7 @@ public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
         }
 
         context.Logger.LogWarning(
-            "Risposta web sospetta senza tool MCP (turno utente: {Preview}); ritento con nudge.",
+            "Suspicious web answer without MCP tools (user turn: {Preview}); retrying with nudge.",
             userMessage.Length > 80 ? userMessage[..80] + "…" : userMessage);
 
         context.TurnScope.BeginUserTurn();
@@ -101,7 +109,7 @@ public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
         if (!context.Kernel.Plugins.TryGetPlugin(SearchWebPluginMetadata.PluginName, out _))
         {
             _logger.LogWarning(
-                "Plugin {PluginName} non registrato; ricerca diretta non disponibile.",
+                "Plugin {PluginName} is not registered; direct search unavailable.",
                 SearchWebPluginMetadata.PluginName);
             return null;
         }
@@ -123,7 +131,7 @@ public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Errore durante la ricerca internet diretta.");
+            _logger.LogError(ex, "Direct internet search failed.");
             return null;
         }
 
@@ -133,24 +141,34 @@ public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
             return null;
         }
 
-        return await SummarizeSearchAsync(context, searchQuery, raw, cancellationToken).ConfigureAwait(false);
+        return await SummarizeSearchAsync(
+                context,
+                searchQuery,
+                raw,
+                _responseCulture,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private static async Task<string> SummarizeSearchAsync(
         JarvisPluginTurnContext context,
         string searchQuery,
         string searchResult,
+        CultureInfo responseCulture,
         CancellationToken cancellationToken)
     {
+        var languageName = responseCulture.NativeName;
         var synthesisPrompt =
-            "L'utente ha chiesto: "
+            "User request: "
             + context.UserMessage
-            + "\nQuery usata su internet: "
+            + "\nWeb search query: "
             + searchQuery
-            + "\nRisultato della ricerca:\n"
+            + "\nSearch result:\n"
             + searchResult
-            + "\n\nRiassumi in italiano in modo breve (adatto alla sintesi vocale). "
-            + "Usa solo le informazioni presenti nel risultato; se è scarso o vuoto, dillo chiaramente.";
+            + "\n\nSummarize briefly in "
+            + languageName
+            + " (suitable for voice). "
+            + "Use only information from the result; if it is sparse or empty, say so clearly.";
 
         var synthesisHistory = CloneHistory(context.HistorySnapshot);
         synthesisHistory.AddUserMessage(synthesisPrompt);
