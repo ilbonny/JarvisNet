@@ -8,14 +8,14 @@ namespace JarvisNet.SearchWeb;
 
 [JarvisPlugin(
     "SearchWeb",
-    "1.0.0",
-    "Web search via DuckDuckGo Instant Answer and optional news RSS fallback.")]
+    "1.1.0",
+    "Web search via Brave Search API with Wikipedia and Google News fallbacks.")]
 public sealed class SearchWebPlugin : IJarvisPlugin
 {
-    private readonly DuckDuckGoSearchService _search;
+    private readonly InternetSearchService _search;
     private readonly ILogger<SearchWebPlugin> _logger;
 
-    public SearchWebPlugin(DuckDuckGoSearchService search, ILogger<SearchWebPlugin> logger)
+    public SearchWebPlugin(InternetSearchService search, ILogger<SearchWebPlugin> logger)
     {
         _search = search;
         _logger = logger;

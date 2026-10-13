@@ -1,8 +1,10 @@
 using JarvisNet.Audio.Abstractions;
 using JarvisNet.Audio.Events;
+using JarvisNet.Audio.Models;
 using JarvisNet.Core.Enums;
 using JarvisNet.Engine.Abstractions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace JarvisNet.Engine.Services;
 
@@ -14,8 +16,12 @@ public sealed class JarvisNetOrchestrator
     private readonly ISpeechToTextService _speechToText;
     private readonly ITextToSpeechService _textToSpeech;
     private readonly OllamaBrainService _brain;
+    private readonly AudioOptions _audioOptions;
     private readonly ILogger<JarvisNetOrchestrator> _logger;
     private readonly SemaphoreSlim _processingLock = new(1, 1);
+
+    private CancellationTokenSource? _turnCts;
+    private int _bargeInMicEnergyStreak;
 
     private CancellationTokenSource? _sessionCts;
     private Task? _sessionTask;
@@ -28,12 +34,14 @@ public sealed class JarvisNetOrchestrator
         ISpeechToTextService speechToText,
         ITextToSpeechService textToSpeech,
         OllamaBrainService brain,
+        IOptions<AudioOptions> audioOptions,
         ILogger<JarvisNetOrchestrator> logger)
     {
         _audioInput = audioInput;
         _speechToText = speechToText;
         _textToSpeech = textToSpeech;
         _brain = brain;
+        _audioOptions = audioOptions.Value;
         _logger = logger;
     }
 
@@ -83,6 +91,9 @@ public sealed class JarvisNetOrchestrator
         }
 
         DetachHandlers();
+        _turnCts?.Cancel();
+        _turnCts?.Dispose();
+        _turnCts = null;
         _sessionCts?.Dispose();
         _sessionCts = null;
         _sessionTask = null;
@@ -147,12 +158,32 @@ public sealed class JarvisNetOrchestrator
 
     private void OnAudioLevelChanged(object? sender, AudioLevelChangedEventArgs e)
     {
-        if (_currentState == JarvisState.Speaking)
+        if (_currentState == JarvisState.Speaking && _audioOptions.EnableBargeIn)
         {
+            if (_audioOptions.BargeInOnMicEnergy && TryInterruptFromMicEnergy(e.Level))
+            {
+                _logger.LogInformation("Interruzione da voce sul microfono (energia).");
+                InterruptActiveTurn(setListening: true);
+            }
+
+            AudioLevelChanged?.Invoke(this, e.Level);
             return;
         }
 
+        _bargeInMicEnergyStreak = 0;
         AudioLevelChanged?.Invoke(this, e.Level);
+    }
+
+    private bool TryInterruptFromMicEnergy(float level)
+    {
+        if (level < _audioOptions.BargeInRmsThreshold)
+        {
+            _bargeInMicEnergyStreak = 0;
+            return false;
+        }
+
+        _bargeInMicEnergyStreak++;
+        return _bargeInMicEnergyStreak >= _audioOptions.BargeInMicEnergyFrames;
     }
 
     private void OnPlaybackLevelChanged(object? sender, AudioLevelChangedEventArgs e)
@@ -200,12 +231,22 @@ public sealed class JarvisNetOrchestrator
 
     private async void OnSpeechRecognized(object? sender, SpeechRecognizedEventArgs e)
     {
-        if (!e.IsFinal || !IsMeaningfulFinalTranscript(e.Text))
+        var transcript = e.Text.Trim();
+        if (string.IsNullOrWhiteSpace(transcript))
         {
             return;
         }
 
-        var transcript = e.Text.Trim();
+        if (TryHandleInterruptCommand(transcript))
+        {
+            return;
+        }
+
+        if (!e.IsFinal || !IsMeaningfulFinalTranscript(transcript))
+        {
+            return;
+        }
+
         if (IsExitCommand(transcript))
         {
             _logger.LogInformation("Comando di uscita rilevato: {Transcript}", transcript);
@@ -218,11 +259,32 @@ public sealed class JarvisNetOrchestrator
             return;
         }
 
-        if (!await _processingLock.WaitAsync(0).ConfigureAwait(false))
+        var interrupting =
+            _audioOptions.EnableBargeIn &&
+            (_currentState == JarvisState.Speaking || _currentState == JarvisState.Thinking);
+
+        if (interrupting)
+        {
+            _logger.LogInformation("Interruzione vocale: {Transcript}", transcript);
+            InterruptActiveTurn();
+        }
+
+        if (!interrupting && !await _processingLock.WaitAsync(0).ConfigureAwait(false))
         {
             _logger.LogDebug("Ignoro transcript mentre è in corso una risposta: {Transcript}", transcript);
             return;
         }
+
+        if (interrupting)
+        {
+            await _processingLock.WaitAsync().ConfigureAwait(false);
+        }
+
+        _turnCts?.Dispose();
+        _turnCts = _sessionCts is not null
+            ? CancellationTokenSource.CreateLinkedTokenSource(_sessionCts.Token)
+            : new CancellationTokenSource();
+        var turnToken = _turnCts.Token;
 
         try
         {
@@ -234,7 +296,12 @@ public sealed class JarvisNetOrchestrator
             var reply = await _brain.SendStreamingAsync(
                 transcript,
                 chunk => AssistantResponseChunk?.Invoke(this, chunk),
-                CancellationToken.None).ConfigureAwait(false);
+                turnToken).ConfigureAwait(false);
+
+            if (turnToken.IsCancellationRequested)
+            {
+                return;
+            }
 
             AssistantResponseReceived?.Invoke(this, reply);
             _logger.LogInformation("JarvisNet: {Reply}", reply);
@@ -242,9 +309,17 @@ public sealed class JarvisNetOrchestrator
             var speechText = TtsSpeechFormatter.SanitizeForSpeech(reply);
             if (!string.IsNullOrWhiteSpace(speechText))
             {
-                await _textToSpeech.SpeakAsync(speechText, CancellationToken.None).ConfigureAwait(false);
+                await _textToSpeech.SpeakAsync(speechText, turnToken).ConfigureAwait(false);
             }
             else if (_sessionActive)
+            {
+                SetState(JarvisState.Listening);
+            }
+        }
+        catch (OperationCanceledException) when (turnToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Turno conversazionale interrotto.");
+            if (_sessionActive)
             {
                 SetState(JarvisState.Listening);
             }
@@ -260,6 +335,39 @@ public sealed class JarvisNetOrchestrator
         finally
         {
             _processingLock.Release();
+        }
+    }
+
+    private bool TryHandleInterruptCommand(string transcript)
+    {
+        if (!_audioOptions.EnableBargeIn ||
+            (_currentState != JarvisState.Speaking && _currentState != JarvisState.Thinking))
+        {
+            return false;
+        }
+
+        if (!VoiceInterruptPhrases.IsInterruptCommand(transcript))
+        {
+            return false;
+        }
+
+        _logger.LogInformation("Comando di interruzione: {Transcript}", transcript);
+        InterruptActiveTurn(setListening: true);
+        return true;
+    }
+
+    private void InterruptActiveTurn(bool setListening = false)
+    {
+        _bargeInMicEnergyStreak = 0;
+        _textToSpeech.StopSpeaking();
+        if (_turnCts is not null)
+        {
+            _turnCts.Cancel();
+        }
+
+        if (setListening && _sessionActive)
+        {
+            SetState(JarvisState.Listening);
         }
     }
 

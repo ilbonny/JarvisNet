@@ -25,7 +25,7 @@ public static class ServiceCollectionExtensions
 
         var pluginOptions = configuration.GetSection(PluginOptions.SectionName).Get<PluginOptions>()
             ?? new PluginOptions();
-        services.AddJarvisPluginHostConfiguration(PluginFolderResolver.Resolve(pluginOptions));
+        services.AddJarvisPluginHostConfiguration(configuration, PluginFolderResolver.Resolve(pluginOptions));
         return services.AddJarvisPluginLoader();
     }
 
@@ -45,10 +45,11 @@ public static class ServiceCollectionExtensions
     /// <param name="pluginsFolder">Cartella plugin; se null usa <c>Plugins</c> sotto la base directory dell'app.</param>
     public static IServiceCollection AddJarvisPluginHostConfiguration(
         this IServiceCollection services,
+        IConfiguration configuration,
         string? pluginsFolder = null)
     {
         pluginsFolder ??= Path.Combine(AppContext.BaseDirectory, "Plugins");
-        PluginHostConfigurator.ConfigureServices(services, pluginsFolder);
+        PluginHostConfigurator.ConfigureServices(services, pluginsFolder, configuration);
         return services;
     }
 }

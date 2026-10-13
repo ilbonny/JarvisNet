@@ -25,7 +25,11 @@ internal sealed class NAudioOutputPlayer
 
             while (wavePlayer.PlaybackState == PlaybackState.Playing)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    wavePlayer.Stop();
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
 
                 if (onPlaybackLevel is not null && envelope.Length > 0)
                 {

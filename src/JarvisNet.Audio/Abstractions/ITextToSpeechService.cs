@@ -16,4 +16,9 @@ public interface ITextToSpeechService
     Task<byte[]> SynthesizePcmAsync(string text, CancellationToken cancellationToken = default);
 
     Task SpeakAsync(string text, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Stops current playback immediately (barge-in).
+    /// </summary>
+    void StopSpeaking();
 }

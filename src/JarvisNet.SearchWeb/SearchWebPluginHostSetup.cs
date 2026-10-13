@@ -3,6 +3,7 @@ using JarvisNet.Plugins.Sdk.Abstractions;
 using JarvisNet.Plugins.Sdk.DependencyInjection;
 using JarvisNet.Plugins.Sdk.Infrastructure;
 using JarvisNet.Plugins.Sdk.Options;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,34 +12,54 @@ namespace JarvisNet.SearchWeb;
 
 public sealed class SearchWebPluginHostSetup : IJarvisPluginHostSetup
 {
-    public void ConfigureServices(IServiceCollection services)
+    public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddOptions<SearchWebOptions>()
+            .Bind(configuration.GetSection(SearchWebOptions.SectionName));
+
         services.AddJarvisPluginTurnHandler<SearchWebPluginTurnHandler>();
         services.AddHttpClient(
-            DuckDuckGoSearchServiceRegistration.HttpClientName,
-            static client => DuckDuckGoSearchServiceRegistration.ConfigureClient(client));
+            BraveWebSearchServiceRegistration.HttpClientName,
+            static client => BraveWebSearchServiceRegistration.ConfigureClient(client));
         services.AddHttpClient(
             GoogleNewsRssSearchServiceRegistration.HttpClientName,
             static client => GoogleNewsRssSearchServiceRegistration.ConfigureClient(client));
+        services.AddHttpClient(
+            WikipediaSummarySearchServiceRegistration.HttpClientName,
+            static client => WikipediaSummarySearchServiceRegistration.ConfigureClient(client));
 
         services.AddSingleton(sp =>
         {
             var culture = ResolveSearchCulture(sp);
             var factory = sp.GetRequiredService<IHttpClientFactory>();
             var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+            var options = sp.GetRequiredService<IOptionsMonitor<SearchWebOptions>>();
+
             var newsClient = GoogleNewsRssSearchServiceRegistration.ConfigureClient(
                 factory.CreateClient(GoogleNewsRssSearchServiceRegistration.HttpClientName));
             var newsSearch = new GoogleNewsRssSearchService(
                 newsClient,
                 loggerFactory.CreateLogger<GoogleNewsRssSearchService>(),
                 culture);
-            var ddgClient = DuckDuckGoSearchServiceRegistration.ConfigureClient(
-                factory.CreateClient(DuckDuckGoSearchServiceRegistration.HttpClientName));
-            return new DuckDuckGoSearchService(
-                ddgClient,
-                loggerFactory.CreateLogger<DuckDuckGoSearchService>(),
-                culture,
-                newsSearch);
+            var wikiClient = WikipediaSummarySearchServiceRegistration.ConfigureClient(
+                factory.CreateClient(WikipediaSummarySearchServiceRegistration.HttpClientName));
+            var wikipediaSearch = new WikipediaSummarySearchService(
+                wikiClient,
+                loggerFactory.CreateLogger<WikipediaSummarySearchService>(),
+                culture);
+            var braveClient = BraveWebSearchServiceRegistration.ConfigureClient(
+                factory.CreateClient(BraveWebSearchServiceRegistration.HttpClientName));
+            var braveSearch = new BraveWebSearchService(
+                braveClient,
+                loggerFactory.CreateLogger<BraveWebSearchService>(),
+                options,
+                culture);
+
+            return new InternetSearchService(
+                braveSearch,
+                loggerFactory.CreateLogger<InternetSearchService>(),
+                newsSearch,
+                wikipediaSearch);
         });
     }
 

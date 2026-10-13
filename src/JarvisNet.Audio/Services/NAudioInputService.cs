@@ -17,6 +17,8 @@ public sealed class NAudioInputService : IAudioInputService
     private bool _pushToTalkActive;
     private bool _isCapturing;
     private volatile bool _sttSuppressed;
+    private volatile bool _bargeInListening;
+    private float _bargeInMinRms;
 
     public NAudioInputService(IOptions<AudioOptions> options, ILogger<NAudioInputService> logger)
     {
@@ -86,6 +88,12 @@ public sealed class NAudioInputService : IAudioInputService
 
     public void SetSpeechToTextSuppressed(bool suppressed) => _sttSuppressed = suppressed;
 
+    public void SetBargeInListening(bool active, float minInputRms = 0f)
+    {
+        _bargeInListening = active;
+        _bargeInMinRms = minInputRms;
+    }
+
     public async ValueTask DisposeAsync()
     {
         await StopAsync().ConfigureAwait(false);
@@ -115,7 +123,10 @@ public sealed class NAudioInputService : IAudioInputService
         // PushToTalk mode (when the button is not pressed).
         if (_sttSuppressed)
         {
-            return;
+            if (!_bargeInListening || rms < _bargeInMinRms)
+            {
+                return;
+            }
         }
 
         if (InputMode == AudioInputMode.PushToTalk && !_pushToTalkActive)

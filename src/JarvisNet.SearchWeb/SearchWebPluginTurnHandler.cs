@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using JarvisNet.Plugins.Sdk;
 using JarvisNet.Plugins.Sdk.Abstractions;
 using JarvisNet.Plugins.Sdk.Infrastructure;
@@ -128,6 +129,11 @@ public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
                     },
                     cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is JsonException or HttpRequestException or TaskCanceledException)
+        {
+            _logger.LogWarning(ex, "Direct internet search unavailable for this turn.");
+            return null;
         }
         catch (Exception ex)
         {

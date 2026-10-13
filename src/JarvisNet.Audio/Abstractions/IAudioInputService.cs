@@ -23,4 +23,9 @@ public interface IAudioInputService : IAsyncDisposable
     /// When true, capture continues but frames are not forwarded (e.g. during TTS playback to avoid echo).
     /// </summary>
     void SetSpeechToTextSuppressed(bool suppressed);
+
+    /// <summary>
+    /// During TTS with barge-in: forward frames to STT only when input RMS is at or above <paramref name="minInputRms"/>.
+    /// </summary>
+    void SetBargeInListening(bool active, float minInputRms = 0f);
 }

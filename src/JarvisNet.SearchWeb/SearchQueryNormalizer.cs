@@ -46,6 +46,17 @@ internal static partial class SearchQueryNormalizer
     internal static bool PreferTopHeadlinesFeed(string query) =>
         WebSearchLanguage.PreferTopHeadlinesFeed(query);
 
+    internal static IEnumerable<string> GetWikipediaSearchAttempts(string query)
+    {
+        yield return query;
+
+        if (query.Contains("sensori", StringComparison.OrdinalIgnoreCase)
+            && query.Contains("auto", StringComparison.OrdinalIgnoreCase))
+        {
+            yield return "sensori di parcheggio";
+        }
+    }
+
     private static string StripLeadingArticles(string text)
     {
         ReadOnlySpan<string> prefixes =

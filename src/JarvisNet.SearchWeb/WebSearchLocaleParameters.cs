@@ -33,4 +33,24 @@ internal static class WebSearchLocaleParameters
     {
         internal string QueryString => $"hl={Hl}&gl={Gl}&ceid={Ceid}";
     }
+
+    internal static string ToWikipediaWiki(CultureInfo culture) =>
+        culture.TwoLetterISOLanguageName.ToLowerInvariant();
+
+    internal static (string Country, string SearchLang) ToBrave(CultureInfo culture, SearchWebOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(options.Country) && !string.IsNullOrWhiteSpace(options.SearchLang))
+        {
+            return (options.Country.Trim().ToUpperInvariant(), options.SearchLang.Trim().ToLowerInvariant());
+        }
+
+        var news = ToGoogleNews(culture);
+        var searchLang = string.IsNullOrWhiteSpace(options.SearchLang)
+            ? culture.TwoLetterISOLanguageName.ToLowerInvariant()
+            : options.SearchLang.Trim().ToLowerInvariant();
+        var country = string.IsNullOrWhiteSpace(options.Country)
+            ? news.Gl
+            : options.Country.Trim().ToUpperInvariant();
+        return (country, searchLang);
+    }
 }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace JarvisNet.Plugins.Sdk.Abstractions;
@@ -7,5 +8,5 @@ namespace JarvisNet.Plugins.Sdk.Abstractions;
 /// </summary>
 public interface IJarvisPluginHostSetup
 {
-    void ConfigureServices(IServiceCollection services);
+    void ConfigureServices(IServiceCollection services, IConfiguration configuration);
 }

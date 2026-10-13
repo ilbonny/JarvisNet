@@ -39,11 +39,26 @@ function Get-PiperVoice {
     Get-HfFile "$base/$OnnxName.onnx.json" (Join-Path $tts "$OnnxName.onnx.json")
 }
 
+function Get-PiperVoiceFromRepo {
+    param(
+        [string]$HfRepo,
+        [string]$OnnxName,
+        [string]$OnnxRemoteName = "model.onnx",
+        [string]$JsonRemoteName = "model.onnx.json"
+    )
+    $base = "https://huggingface.co/$HfRepo/resolve/main"
+    Get-HfFile "$base/$OnnxRemoteName" (Join-Path $tts "$OnnxName.onnx")
+    Get-HfFile "$base/$JsonRemoteName" (Join-Path $tts "$OnnxName.onnx.json")
+}
+
 if ($Locale -eq "it" -or $Locale -eq "all") {
     Write-Host "=== Italiano (STT + TTS) ==="
     Get-SherpaKroko -LangFolder "it-kroko" -HfRepo "kouhxp/sherpa-onnx-streaming-zipformer-it-kroko"
     Get-PiperVoice -HfPath "it/it_IT/paola/medium" -OnnxName "it_IT-paola-medium"
     Get-PiperVoice -HfPath "it/it_IT/riccardo/x_low" -OnnxName "it_IT-riccardo-x_low"
+    # Uomo italiano medium (OpenVoiceOS; licenza CC BY-NC-ND — no uso commerciale)
+    Get-PiperVoiceFromRepo -HfRepo "OpenVoiceOS/pipertts_it-IT_miro" -OnnxName "it_IT-miro-medium" `
+        -OnnxRemoteName "miro_it-IT.onnx" -JsonRemoteName "miro_it-IT.onnx.json"
 }
 
 if ($Locale -eq "es" -or $Locale -eq "all") {

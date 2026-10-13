@@ -22,7 +22,9 @@ public sealed class PiperTtsService : ITextToSpeechService
     private readonly IAudioInputService _audioInput;
     private readonly ILogger<PiperTtsService> _logger;
     private readonly SemaphoreSlim _initLock = new(1, 1);
+    private readonly object _speakGate = new();
     private PiperProvider? _provider;
+    private IWavePlayer? _activeWavePlayer;
 
     public PiperTtsService(
         IOptions<AudioOptions> options,
@@ -45,9 +47,23 @@ public sealed class PiperTtsService : ITextToSpeechService
         return await provider.InferAsync(text, AudioOutputType.Raw).ConfigureAwait(false);
     }
 
+    public void StopSpeaking()
+    {
+        lock (_speakGate)
+        {
+            _activeWavePlayer?.Stop();
+        }
+    }
+
     public async Task SpeakAsync(string text, CancellationToken cancellationToken = default)
     {
         _audioInput.SetSpeechToTextSuppressed(true);
+        if (_options.EnableBargeIn)
+        {
+            _audioInput.SetBargeInListening(true, _options.BargeInRmsThreshold);
+        }
+
+        var speakingStarted = false;
         try
         {
             var pcm = await SynthesizePcmAsync(text, cancellationToken).ConfigureAwait(false);
@@ -57,27 +73,59 @@ public sealed class PiperTtsService : ITextToSpeechService
             }
 
             SpeakingStarted?.Invoke(this, EventArgs.Empty);
+            speakingStarted = true;
 
             var sampleRate = _provider?.Configuration.Model.Audio?.SampleRate ?? (uint)_options.PiperSampleRate;
             var waveFormat = new WaveFormat((int)sampleRate, 16, 1);
-            using var wavePlayer = AudioBackendFactory.CreateWavePlayer(_options);
-            _logger.LogInformation(
-                "Playing TTS ({ByteCount} bytes, {SampleRate} Hz, output device #{Device}).",
-                pcm.Length,
-                sampleRate,
-                _options.OutputDeviceNumber);
-            var outputPlayer = new NAudioOutputPlayer();
-            await outputPlayer.PlayPcmAsync(
-                wavePlayer,
-                pcm,
-                waveFormat,
-                level => PlaybackLevelChanged?.Invoke(this, new AudioLevelChangedEventArgs(level, DateTimeOffset.UtcNow)),
-                cancellationToken).ConfigureAwait(false);
+            var wavePlayer = AudioBackendFactory.CreateWavePlayer(_options);
+            lock (_speakGate)
+            {
+                _activeWavePlayer = wavePlayer;
+            }
+
+            try
+            {
+                _logger.LogInformation(
+                    "Playing TTS ({ByteCount} bytes, {SampleRate} Hz, output device #{Device}, barge-in: {BargeIn}).",
+                    pcm.Length,
+                    sampleRate,
+                    _options.OutputDeviceNumber,
+                    _options.EnableBargeIn);
+                var outputPlayer = new NAudioOutputPlayer();
+                await outputPlayer.PlayPcmAsync(
+                    wavePlayer,
+                    pcm,
+                    waveFormat,
+                    level => PlaybackLevelChanged?.Invoke(this, new AudioLevelChangedEventArgs(level, DateTimeOffset.UtcNow)),
+                    cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                lock (_speakGate)
+                {
+                    if (ReferenceEquals(_activeWavePlayer, wavePlayer))
+                    {
+                        _activeWavePlayer = null;
+                    }
+                }
+
+                wavePlayer.Dispose();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Riproduzione TTS interrotta.");
+            throw;
         }
         finally
         {
-            SpeakingCompleted?.Invoke(this, EventArgs.Empty);
+            _audioInput.SetBargeInListening(false);
             _audioInput.SetSpeechToTextSuppressed(false);
+
+            if (speakingStarted)
+            {
+                SpeakingCompleted?.Invoke(this, EventArgs.Empty);
+            }
         }
     }
 

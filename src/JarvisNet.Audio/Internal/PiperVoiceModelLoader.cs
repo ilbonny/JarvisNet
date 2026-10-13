@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using PiperSharp.Models;
 
 namespace JarvisNet.Audio.Internal;
@@ -21,11 +20,7 @@ internal static class PiperVoiceModelLoader
         if (File.Exists(configPath))
         {
             await using var stream = File.OpenRead(configPath);
-            var config = await JsonSerializer.DeserializeAsync<PiperOnnxConfig>(
-                    stream,
-                    cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
-            audio = config?.Audio;
+            audio = await ReadVoiceAudioAsync(stream, cancellationToken).ConfigureAwait(false);
         }
 
         return new VoiceModel
@@ -37,9 +32,48 @@ internal static class PiperVoiceModelLoader
         };
     }
 
-    private sealed class PiperOnnxConfig
+    private static async Task<VoiceAudio?> ReadVoiceAudioAsync(Stream stream, CancellationToken cancellationToken)
     {
-        [JsonPropertyName("audio")]
-        public VoiceAudio? Audio { get; set; }
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!document.RootElement.TryGetProperty("audio", out var audioElement))
+        {
+            return null;
+        }
+
+        uint sampleRate = 22050;
+        if (audioElement.TryGetProperty("sample_rate", out var sampleRateElement) &&
+            sampleRateElement.TryGetUInt32(out var parsedSampleRate))
+        {
+            sampleRate = parsedSampleRate;
+        }
+
+        var qualityToken = audioElement.TryGetProperty("quality", out var qualityElement)
+            ? qualityElement.GetString()
+            : null;
+
+        return new VoiceAudio
+        {
+            SampleRate = sampleRate,
+            Quality = MapQuality(qualityToken),
+        };
+    }
+
+    internal static VoiceQuality MapQuality(string? qualityToken)
+    {
+        if (string.IsNullOrWhiteSpace(qualityToken))
+        {
+            return VoiceQuality.Medium;
+        }
+
+        var normalized = qualityToken.Trim().Replace('-', '_');
+        if (Enum.TryParse<VoiceQuality>(normalized, ignoreCase: true, out var parsed))
+        {
+            return parsed;
+        }
+
+        // OpenVoiceOS / export variants (e.g. "training") — not in PiperSharp enum.
+        return VoiceQuality.Medium;
     }
 }

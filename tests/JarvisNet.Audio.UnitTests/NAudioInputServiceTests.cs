@@ -33,4 +33,14 @@ public sealed class NAudioInputServiceTests
 
         Assert.That(devices, Is.Not.Null);
     }
+
+    [Test]
+    public void SetBargeInListening_DoesNotThrow()
+    {
+        var options = Options.Create(new AudioOptions());
+        var service = new NAudioInputService(options, NullLogger<NAudioInputService>.Instance);
+
+        Assert.DoesNotThrow(() => service.SetBargeInListening(true, 0.03f));
+        Assert.DoesNotThrow(() => service.SetBargeInListening(false));
+    }
 }

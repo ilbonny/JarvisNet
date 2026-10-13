@@ -23,6 +23,18 @@ public static class ConfigurationBuilderExtensions
             configuration.AddJsonFile(mcpPath, optional: true, reloadOnChange: true);
         }
 
+        var searchPath = Path.Combine(repositoryRoot, "config", "jarvisnet.searchweb.json");
+        if (File.Exists(searchPath))
+        {
+            configuration.AddJsonFile(searchPath, optional: true, reloadOnChange: true);
+        }
+
+        var searchLocalPath = Path.Combine(repositoryRoot, "config", "jarvisnet.searchweb.local.json");
+        if (File.Exists(searchLocalPath))
+        {
+            configuration.AddJsonFile(searchLocalPath, optional: true, reloadOnChange: true);
+        }
+
         return configuration;
     }
 

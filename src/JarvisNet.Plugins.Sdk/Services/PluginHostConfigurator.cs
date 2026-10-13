@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.Loader;
 using JarvisNet.Plugins.Sdk.Abstractions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -11,6 +12,7 @@ public static class PluginHostConfigurator
     public static void ConfigureServices(
         IServiceCollection services,
         string pluginsFolder,
+        IConfiguration configuration,
         ILogger? logger = null)
     {
         if (!Directory.Exists(pluginsFolder))
@@ -33,7 +35,7 @@ public static class PluginHostConfigurator
             try
             {
                 var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(dllPath);
-                ApplyHostSetupFromAssembly(assembly, services, logger, fileName);
+                ApplyHostSetupFromAssembly(assembly, services, configuration, logger, fileName);
             }
             catch (Exception ex)
             {
@@ -45,6 +47,7 @@ public static class PluginHostConfigurator
     private static void ApplyHostSetupFromAssembly(
         Assembly assembly,
         IServiceCollection services,
+        IConfiguration configuration,
         ILogger? logger,
         string fileName)
     {
@@ -67,7 +70,7 @@ public static class PluginHostConfigurator
                     continue;
                 }
 
-                setup.ConfigureServices(services);
+                setup.ConfigureServices(services, configuration);
                 logger?.LogInformation(
                     "Configurazione host plugin applicata: {SetupType} ({PluginAssembly}).",
                     type.FullName,

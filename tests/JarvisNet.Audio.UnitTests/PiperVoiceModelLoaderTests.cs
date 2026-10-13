@@ -1,5 +1,6 @@
 using JarvisNet.Audio.Internal;
 using JarvisNet.Audio.Models;
+using PiperSharp.Models;
 
 namespace JarvisNet.Audio.UnitTests;
 
@@ -22,5 +23,43 @@ public sealed class PiperVoiceModelLoaderTests
         Assert.That(model.ModelLocation, Is.EqualTo(Path.GetDirectoryName(Path.GetFullPath(onnxPath))));
         Assert.That(model.GetModelLocation(), Does.Contain("it_IT-paola-medium.onnx"));
         Assert.That(model.Audio?.SampleRate, Is.EqualTo(22050u));
+    }
+
+    [Test]
+    public void MapQuality_AcceptsStandardAndUnknownTokens()
+    {
+        Assert.That(PiperVoiceModelLoader.MapQuality("medium"), Is.EqualTo(VoiceQuality.Medium));
+        Assert.That(PiperVoiceModelLoader.MapQuality("training"), Is.EqualTo(VoiceQuality.Medium));
+        Assert.That(Enum.IsDefined(typeof(VoiceQuality), PiperVoiceModelLoader.MapQuality("x_low")), Is.True);
+    }
+
+    [Test]
+    public async Task LoadFromOnnxPathAsync_ToleratesTrainingQualityInSidecarJson()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "jarvisnet-piper-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var onnxPath = Path.Combine(dir, "test-voice.onnx");
+        await File.WriteAllTextAsync(onnxPath, string.Empty);
+        await File.WriteAllTextAsync(
+            onnxPath + ".json",
+            """
+            {
+              "audio": {
+                "sample_rate": 22050,
+                "quality": "training"
+              }
+            }
+            """);
+
+        try
+        {
+            var model = await PiperVoiceModelLoader.LoadFromOnnxPathAsync(onnxPath);
+            Assert.That(model.Audio?.SampleRate, Is.EqualTo(22050u));
+            Assert.That(model.Audio?.Quality, Is.EqualTo(VoiceQuality.Medium));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
     }
 }

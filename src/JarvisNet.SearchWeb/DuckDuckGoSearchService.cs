@@ -16,6 +16,7 @@ public sealed class DuckDuckGoSearchService
     private readonly HttpClient _httpClient;
     private readonly ILogger<DuckDuckGoSearchService> _logger;
     private readonly GoogleNewsRssSearchService? _newsSearch;
+    private readonly WikipediaSummarySearchService? _wikipediaSearch;
     private readonly CultureInfo _culture;
     private readonly SearchResultLabels _labels;
 
@@ -23,13 +24,15 @@ public sealed class DuckDuckGoSearchService
         HttpClient httpClient,
         ILogger<DuckDuckGoSearchService> logger,
         CultureInfo culture,
-        GoogleNewsRssSearchService? newsSearch = null)
+        GoogleNewsRssSearchService? newsSearch = null,
+        WikipediaSummarySearchService? wikipediaSearch = null)
     {
         _httpClient = httpClient;
         _logger = logger;
         _culture = culture;
         _labels = SearchResultLabelsForCulture.Get(culture);
         _newsSearch = newsSearch;
+        _wikipediaSearch = wikipediaSearch;
     }
 
     public async Task<string> SearchAsync(string query, int maxRelatedTopics, CancellationToken cancellationToken)
@@ -62,47 +65,97 @@ public sealed class DuckDuckGoSearchService
             return string.Format(_labels.SearchFailed, (int)response.StatusCode);
         }
 
-        await using var stream = await response.Content
-            .ReadAsStreamAsync(cancellationToken)
-            .ConfigureAwait(false);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            _logger.LogWarning("DuckDuckGo returned an empty body for query {Query}.", trimmed);
+            return await AppendWebFallbacksAsync(
+                    trimmed,
+                    maxRelatedTopics,
+                    _labels.UnableToParse,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
 
-        var payload = await JsonSerializer
-            .DeserializeAsync<DuckDuckGoInstantAnswer>(stream, JsonOptions, cancellationToken)
-            .ConfigureAwait(false);
+        DuckDuckGoInstantAnswer? payload;
+        try
+        {
+            payload = JsonSerializer.Deserialize<DuckDuckGoInstantAnswer>(body, JsonOptions);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "DuckDuckGo returned non-JSON content for query {Query} (length {Length}).",
+                trimmed,
+                body.Length);
+            return await AppendWebFallbacksAsync(
+                    trimmed,
+                    maxRelatedTopics,
+                    _labels.UnableToParse,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         if (payload is null)
         {
-            return _labels.UnableToParse;
+            return await AppendWebFallbacksAsync(
+                    trimmed,
+                    maxRelatedTopics,
+                    _labels.UnableToParse,
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
 
         var instant = FormatAnswer(trimmed, payload, maxRelatedTopics, _labels);
-        if (HasSubstantiveInstantAnswer(payload) || _newsSearch is null)
+        if (HasSubstantiveInstantAnswer(payload))
         {
             return instant;
         }
 
-        if (!SearchQueryNormalizer.IsNewsQuery(trimmed))
-        {
-            return instant;
-        }
-
-        var headlines = await _newsSearch
-            .TryFetchHeadlinesAsync(trimmed, maxRelatedTopics, cancellationToken)
+        return await AppendWebFallbacksAsync(trimmed, maxRelatedTopics, instant, cancellationToken)
             .ConfigureAwait(false);
+    }
 
-        if (string.IsNullOrWhiteSpace(headlines))
+    private async Task<string> AppendWebFallbacksAsync(
+        string trimmed,
+        int maxRelatedTopics,
+        string instant,
+        CancellationToken cancellationToken)
+    {
+        var sections = new List<string> { instant };
+
+        if (_wikipediaSearch is not null)
         {
-            return instant;
+            var wiki = await _wikipediaSearch
+                .TryFetchSummaryAsync(trimmed, cancellationToken)
+                .ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(wiki))
+            {
+                sections.Add(wiki);
+            }
         }
 
-        return instant + Environment.NewLine + Environment.NewLine + headlines;
+        if (_newsSearch is not null)
+        {
+            var headlines = await _newsSearch
+                .TryFetchHeadlinesAsync(trimmed, maxRelatedTopics, cancellationToken)
+                .ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(headlines))
+            {
+                sections.Add(headlines);
+            }
+        }
+
+        return string.Join(Environment.NewLine + Environment.NewLine, sections);
     }
 
     internal static bool HasSubstantiveInstantAnswer(DuckDuckGoInstantAnswer payload) =>
         !string.IsNullOrWhiteSpace(payload.Answer)
         || !string.IsNullOrWhiteSpace(payload.Definition)
         || !string.IsNullOrWhiteSpace(payload.AbstractText)
-        || payload.RelatedTopics.Count > 0;
+        || payload.RelatedTopics.Count > 0
+        || payload.Results.Count > 0;
 
     internal static string FormatAnswer(
         string query,
@@ -168,13 +221,25 @@ public sealed class DuckDuckGoSearchService
             }
         }
 
+        var resultLines = CollectRelatedTopics(payload.Results, maxRelatedTopics);
+        if (resultLines.Count > 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine(labels.WebLinks);
+            foreach (var line in resultLines)
+            {
+                builder.AppendLine("- " + line);
+            }
+        }
+
         if (builder.Length <= query.Length + 80
             && string.IsNullOrWhiteSpace(payload.Answer)
             && string.IsNullOrWhiteSpace(payload.AbstractText)
-            && relatedLines.Count == 0)
+            && relatedLines.Count == 0
+            && resultLines.Count == 0)
         {
             builder.AppendLine();
-            builder.AppendLine(labels.NoInstantAnswer);
+            builder.AppendLine(labels.NoWebResults);
         }
 
         return builder.ToString().TrimEnd();

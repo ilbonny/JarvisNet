@@ -1,5 +1,8 @@
+using System.Globalization;
+using System.Net;
 using JarvisNet.SearchWeb;
 using JarvisNet.SearchWeb.Models;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace JarvisNet.SearchWeb.UnitTests;
 
@@ -27,5 +30,33 @@ public sealed class DuckDuckGoSearchServiceTests
         Assert.That(text, Does.Contain("JavaScript"));
         Assert.That(text, Does.Contain("Linguaggio di programmazione"));
         Assert.That(text, Does.Contain("Node.js"));
+    }
+
+    [Test]
+    public async Task SearchAsync_EmptyBody_ReturnsGracefulMessage()
+    {
+        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(string.Empty),
+        });
+        var client = DuckDuckGoSearchServiceRegistration.ConfigureClient(new HttpClient(handler));
+        var service = new DuckDuckGoSearchService(
+            client,
+            NullLogger<DuckDuckGoSearchService>.Instance,
+            CultureInfo.GetCultureInfo("it-IT"));
+
+        var result = await service.SearchAsync("meteo roma", 5, CancellationToken.None);
+
+        Assert.That(result, Does.Contain("interpretabile").Or.Contain("interpret"));
+        Assert.That(result, Does.Not.Contain("JsonException"));
+    }
+
+    private sealed class StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responder)
+        : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(responder(request));
     }
 }
