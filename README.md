@@ -96,29 +96,8 @@ Config condivise (caricate con `AddJarvisNetSharedAudioConfiguration` / `AddJarv
 | Area | File |
 |------|------|
 | Engine (Ollama) | [`config/jarvisnet.engine.json`](config/jarvisnet.engine.json) |
-| Ricerca web (Brave) | [`config/jarvisnet.searchweb.json`](config/jarvisnet.searchweb.json) (+ opzionale `jarvisnet.searchweb.local.json`, gitignored) |
 
-### Chiave Brave Search API (ricerca internet)
-
-Il plugin **SearchWeb** usa la [Brave Search API](https://brave.com/search/api/) (`search_internet`). Senza chiave la ricerca non parte e Jarvis ti dirà che manca la configurazione.
-
-**Come ottenere la chiave (piano con crediti inclusi)**
-
-1. Apri la [dashboard Brave Search API](https://api-dashboard.search.brave.com/) e crea un account (email + password).
-2. Vai su **Plans** e attiva il piano **Search** (ricerca web classica, adatto a JarvisNet).
-3. Brave chiede una **carta di credito** anche per usare i crediti gratuiti mensili (misura anti-abuso; con il limite di spesa a **$5/mese** non viene addebitato nulla oltre al credito incluso). Dettagli: [Quickstart](https://api-dashboard.search.brave.com/documentation/quickstart) e [Authentication](https://api-dashboard.search.brave.com/documentation/guides/authentication).
-4. In **API Keys** → **Add API Key**, assegna un nome (es. `JarvisNet-dev`) e copia il token (subscription token).
-5. Configuralo **solo in locale**, mai in git:
-   - **Consigliato:** variabile d’ambiente  
-     `$env:BRAVE_SEARCH_API_KEY="BSA..."`  
-     (PowerShell; in Linux/macOS: `export BRAVE_SEARCH_API_KEY=...`)
-   - **Alternativa:** copia [`config/jarvisnet.searchweb.local.json.example`](config/jarvisnet.searchweb.local.json.example) in `config/jarvisnet.searchweb.local.json` e incolla la chiave in `JarvisNet:SearchWeb:ApiKey`.
-
-**Quanto costa in pratica**
-
-Ogni piano Search include **$5 di credito al mese** (circa **1.000 richieste** web al prezzo corrente di $5/1.000). Per un assistente personale di solito basta; imposta il **monthly spending limit** a $5 nella dashboard se vuoi evitare addebiti oltre il credito gratuito.
-
-Paese e lingua di ricerca seguono `JarvisNet:Locale:CultureName` (es. `it-IT` → `country=IT`, `search_lang=it`); puoi forzarli in `JarvisNet:SearchWeb:Country` e `SearchLang`.
+Il plugin **SearchWeb** (`search_internet`) interroga **Wikipedia** (API REST, lingua da `JarvisNet:Locale:CultureName`, es. `it-IT` → `it.wikipedia.org`). Non serve alcuna API key.
 
 Config audio condivisa:
 

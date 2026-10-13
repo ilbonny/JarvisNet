@@ -1,73 +1,47 @@
 using System.Globalization;
+using System.Text;
 using Microsoft.Extensions.Logging;
 
 namespace JarvisNet.SearchWeb;
 
 public sealed class InternetSearchService
 {
-    private readonly BraveWebSearchService _brave;
-    private readonly GoogleNewsRssSearchService? _newsSearch;
-    private readonly WikipediaSummarySearchService? _wikipediaSearch;
+    private readonly WikipediaSummarySearchService _wikipedia;
+    private readonly SearchResultLabels _labels;
     private readonly ILogger<InternetSearchService> _logger;
 
     public InternetSearchService(
-        BraveWebSearchService brave,
-        ILogger<InternetSearchService> logger,
-        GoogleNewsRssSearchService? newsSearch = null,
-        WikipediaSummarySearchService? wikipediaSearch = null)
+        WikipediaSummarySearchService wikipedia,
+        CultureInfo culture,
+        ILogger<InternetSearchService> logger)
     {
-        _brave = brave;
+        _wikipedia = wikipedia;
+        _labels = SearchResultLabelsForCulture.Get(culture);
         _logger = logger;
-        _newsSearch = newsSearch;
-        _wikipediaSearch = wikipediaSearch;
     }
 
     public async Task<string> SearchAsync(string query, int maxRelatedTopics, CancellationToken cancellationToken)
     {
+        _ = maxRelatedTopics;
+
         var trimmed = SearchQueryNormalizer.Normalize(query.Trim());
-        var outcome = await _brave.SearchAsync(trimmed, maxRelatedTopics, cancellationToken).ConfigureAwait(false);
-
-        if (outcome.HasWebResults || outcome.IsMissingApiKey)
+        if (string.IsNullOrEmpty(trimmed))
         {
-            return outcome.Message;
+            return _labels.EmptyQuery;
         }
 
-        return await AppendWebFallbacksAsync(trimmed, maxRelatedTopics, outcome.Message, cancellationToken)
-            .ConfigureAwait(false);
-    }
+        _logger.LogInformation("Wikipedia lookup: {Query}", trimmed);
 
-    private async Task<string> AppendWebFallbacksAsync(
-        string trimmed,
-        int maxRelatedTopics,
-        string primary,
-        CancellationToken cancellationToken)
-    {
-        _logger.LogDebug("Brave returned no web hits for {Query}; trying Wikipedia / News fallbacks.", trimmed);
-
-        var sections = new List<string> { primary };
-
-        if (_wikipediaSearch is not null)
+        var wiki = await _wikipedia.TryFetchSummaryAsync(trimmed, cancellationToken).ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(wiki))
         {
-            var wiki = await _wikipediaSearch
-                .TryFetchSummaryAsync(trimmed, cancellationToken)
-                .ConfigureAwait(false);
-            if (!string.IsNullOrWhiteSpace(wiki))
-            {
-                sections.Add(wiki);
-            }
+            return wiki;
         }
 
-        if (_newsSearch is not null)
-        {
-            var headlines = await _newsSearch
-                .TryFetchHeadlinesAsync(trimmed, maxRelatedTopics, cancellationToken)
-                .ConfigureAwait(false);
-            if (!string.IsNullOrWhiteSpace(headlines))
-            {
-                sections.Add(headlines);
-            }
-        }
-
-        return string.Join(Environment.NewLine + Environment.NewLine, sections);
+        var builder = new StringBuilder();
+        builder.AppendLine(string.Format(_labels.WebSearchHeader, trimmed));
+        builder.AppendLine();
+        builder.AppendLine(_labels.NoWebResults);
+        return builder.ToString().TrimEnd();
     }
 }

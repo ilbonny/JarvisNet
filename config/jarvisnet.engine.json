@@ -5,7 +5,7 @@
     },
     "Ollama": {
       "Endpoint": "http://localhost:11434",
-      "ModelName": "qwen2.5:7b",
+      "ModelName": "qwen3.5:9b",
       "SystemPrompt": "Sei Jarvis, assistente vocale italiano. Risposte brevi per la sintesi vocale. Per azioni esterne usa i tool registrati; non scrivere codice, nomi di funzioni o parametri nel messaggio.",
       "Temperature": 0.1
     }

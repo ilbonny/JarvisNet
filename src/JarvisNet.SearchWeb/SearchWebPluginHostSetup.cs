@@ -14,16 +14,9 @@ public sealed class SearchWebPluginHostSetup : IJarvisPluginHostSetup
 {
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<SearchWebOptions>()
-            .Bind(configuration.GetSection(SearchWebOptions.SectionName));
+        _ = configuration;
 
         services.AddJarvisPluginTurnHandler<SearchWebPluginTurnHandler>();
-        services.AddHttpClient(
-            BraveWebSearchServiceRegistration.HttpClientName,
-            static client => BraveWebSearchServiceRegistration.ConfigureClient(client));
-        services.AddHttpClient(
-            GoogleNewsRssSearchServiceRegistration.HttpClientName,
-            static client => GoogleNewsRssSearchServiceRegistration.ConfigureClient(client));
         services.AddHttpClient(
             WikipediaSummarySearchServiceRegistration.HttpClientName,
             static client => WikipediaSummarySearchServiceRegistration.ConfigureClient(client));
@@ -33,33 +26,17 @@ public sealed class SearchWebPluginHostSetup : IJarvisPluginHostSetup
             var culture = ResolveSearchCulture(sp);
             var factory = sp.GetRequiredService<IHttpClientFactory>();
             var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
-            var options = sp.GetRequiredService<IOptionsMonitor<SearchWebOptions>>();
-
-            var newsClient = GoogleNewsRssSearchServiceRegistration.ConfigureClient(
-                factory.CreateClient(GoogleNewsRssSearchServiceRegistration.HttpClientName));
-            var newsSearch = new GoogleNewsRssSearchService(
-                newsClient,
-                loggerFactory.CreateLogger<GoogleNewsRssSearchService>(),
-                culture);
             var wikiClient = WikipediaSummarySearchServiceRegistration.ConfigureClient(
                 factory.CreateClient(WikipediaSummarySearchServiceRegistration.HttpClientName));
             var wikipediaSearch = new WikipediaSummarySearchService(
                 wikiClient,
                 loggerFactory.CreateLogger<WikipediaSummarySearchService>(),
                 culture);
-            var braveClient = BraveWebSearchServiceRegistration.ConfigureClient(
-                factory.CreateClient(BraveWebSearchServiceRegistration.HttpClientName));
-            var braveSearch = new BraveWebSearchService(
-                braveClient,
-                loggerFactory.CreateLogger<BraveWebSearchService>(),
-                options,
-                culture);
 
             return new InternetSearchService(
-                braveSearch,
-                loggerFactory.CreateLogger<InternetSearchService>(),
-                newsSearch,
-                wikipediaSearch);
+                wikipediaSearch,
+                culture,
+                loggerFactory.CreateLogger<InternetSearchService>());
         });
     }
 

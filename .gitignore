@@ -74,8 +74,6 @@ publish/
 ## User-specific secrets (keep templates, ignore local overrides if you use them)
 secrets.json
 *.Development.local.json
-config/jarvisnet.searchweb.local.json
-
 ## OS
 .DS_Store
 Thumbs.db

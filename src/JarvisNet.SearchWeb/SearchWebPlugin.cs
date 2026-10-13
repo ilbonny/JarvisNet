@@ -8,8 +8,8 @@ namespace JarvisNet.SearchWeb;
 
 [JarvisPlugin(
     "SearchWeb",
-    "1.1.0",
-    "Web search via Brave Search API with Wikipedia and Google News fallbacks.")]
+    "1.2.0",
+    "Lookup factual summaries from Wikipedia (locale-aware REST API).")]
 public sealed class SearchWebPlugin : IJarvisPlugin
 {
     private readonly InternetSearchService _search;
