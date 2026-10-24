@@ -1,3 +1,4 @@
+using JarvisNet.Engine.Models;
 using JarvisNet.Plugins.Sdk;
 using JarvisNet.Plugins.Sdk.Abstractions;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,10 @@ public sealed class JarvisTurnScope : IJarvisTurnScope, IFunctionInvocationFilte
     }
 
     public int ToolsInvokedThisTurn { get; private set; }
+
+    public event EventHandler<ModuleToolEventArgs>? ModuleToolExecutionStarted;
+
+    public event EventHandler<ModuleToolEventArgs>? ModuleToolExecutionCompleted;
 
     public void BeginUserTurn()
     {
@@ -47,12 +52,28 @@ public sealed class JarvisTurnScope : IJarvisTurnScope, IFunctionInvocationFilte
             }
         }
 
+        var moduleId = context.Function.PluginName ?? "Core";
+        var toolName = context.Function.Name;
+        var toolEvent = new ModuleToolEventArgs
+        {
+            ModuleId = moduleId,
+            ToolName = toolName,
+        };
+
         lock (_lock)
         {
             ToolsInvokedThisTurn++;
         }
 
-        await next(context).ConfigureAwait(false);
+        ModuleToolExecutionStarted?.Invoke(this, toolEvent);
+        try
+        {
+            await next(context).ConfigureAwait(false);
+        }
+        finally
+        {
+            ModuleToolExecutionCompleted?.Invoke(this, toolEvent);
+        }
     }
 
     private static bool IsSearchWebInternetSearch(FunctionInvocationContext context)

@@ -4,23 +4,66 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>J.A.R.V.I.S.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/jarvis.css" />
   <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
 </head>
 <body>
   <header class="top-bar">
-    <span id="connection-status" class="status-badge status-disconnected">DISCONNECTED</span>
-    <div class="controls">
-      <button type="button" id="btn-start">Start</button>
-      <button type="button" id="btn-stop">Stop</button>
+    <div id="connection-status-wrap" class="status-badge status-disconnected">
+      <svg class="status-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path class="status-icon-connected" d="M2 8.5C5.5 4 18.5 4 22 8.5M5 12c2.5-2.8 11.5-2.8 14 0M8.5 15.5c1.2-1.3 5.8-1.3 7 0M12 19h.01"/>
+        <path class="status-icon-disconnected" d="M2 8.5C5.5 4 18.5 4 22 8.5M5 12c2.5-2.8 11.5-2.8 14 0M8.5 15.5c1.2-1.3 5.8-1.3 7 0M12 19h.01M3 3l18 18"/>
+      </svg>
+      <span id="connection-status">DISCONNECTED</span>
+    </div>
+    <div class="top-bar-right">
+      <div class="hud-clock">
+        <time id="hud-time" class="hud-time" datetime="">00:00:00</time>
+        <time id="hud-date" class="hud-date" datetime="">---</time>
+      </div>
+      <span class="top-bar-divider" aria-hidden="true"></span>
+      <button type="button" id="btn-mic" class="mic-btn" aria-label="Abilita microfono" aria-pressed="false">
+        <span class="mic-btn-ring" aria-hidden="true"></span>
+        <svg class="mic-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3z"/>
+          <path d="M19 11a7 7 0 0 1-14 0M12 18v3M8 21h8"/>
+        </svg>
+        <span class="mic-label">IDLE</span>
+      </button>
     </div>
   </header>
 
   <main class="layout">
-    <canvas id="hud" width="640" height="640" aria-label="JARVIS HUD"></canvas>
-    <section id="chat-log" class="chat-log" aria-live="polite"></section>
+    <div class="left-stage">
+      <aside class="hud-panel" aria-label="JARVIS HUD">
+        <div class="hud-stage" id="hud-stage">
+          <svg class="hud-orbit-links" id="hud-orbit-links" aria-hidden="true"></svg>
+          <div class="module-orbit" id="module-orbit"></div>
+          <div class="hud-core">
+            <canvas id="hud" width="640" height="640"></canvas>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <section class="command-console" aria-label="Command console">
+      <header class="console-header">
+        <span class="console-title">&gt;_ COMMAND CONSOLE</span>
+        <button type="button" id="btn-clear-chat" class="console-icon-btn" title="Clear chat" aria-label="Clear chat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+          </svg>
+        </button>
+      </header>
+      <div id="chat-log" class="chat-log" aria-live="polite"></div>
+    </section>
   </main>
 
+  <script src="js/jarvis-clock.js"></script>
+  <script src="js/jarvis-module-orbit.js"></script>
   <script src="js/jarvis-hud.js"></script>
   <script src="js/jarvis-signalr.js"></script>
 </body>

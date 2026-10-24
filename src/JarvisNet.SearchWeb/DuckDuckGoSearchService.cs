@@ -15,7 +15,6 @@ public sealed class DuckDuckGoSearchService
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<DuckDuckGoSearchService> _logger;
-    private readonly GoogleNewsRssSearchService? _newsSearch;
     private readonly WikipediaSummarySearchService? _wikipediaSearch;
     private readonly CultureInfo _culture;
     private readonly SearchResultLabels _labels;
@@ -24,18 +23,19 @@ public sealed class DuckDuckGoSearchService
         HttpClient httpClient,
         ILogger<DuckDuckGoSearchService> logger,
         CultureInfo culture,
-        GoogleNewsRssSearchService? newsSearch = null,
         WikipediaSummarySearchService? wikipediaSearch = null)
     {
         _httpClient = httpClient;
         _logger = logger;
         _culture = culture;
         _labels = SearchResultLabelsForCulture.Get(culture);
-        _newsSearch = newsSearch;
         _wikipediaSearch = wikipediaSearch;
     }
 
-    public async Task<string> SearchAsync(string query, int maxRelatedTopics, CancellationToken cancellationToken)
+    public async Task<string> SearchAsync(
+        string query, 
+        int maxRelatedTopics,
+        CancellationToken cancellationToken)
     {
         var trimmed = SearchQueryNormalizer.Normalize(query.Trim());
         if (string.IsNullOrEmpty(trimmed))
@@ -133,17 +133,6 @@ public sealed class DuckDuckGoSearchService
             if (!string.IsNullOrWhiteSpace(wiki))
             {
                 sections.Add(wiki);
-            }
-        }
-
-        if (_newsSearch is not null)
-        {
-            var headlines = await _newsSearch
-                .TryFetchHeadlinesAsync(trimmed, maxRelatedTopics, cancellationToken)
-                .ConfigureAwait(false);
-            if (!string.IsNullOrWhiteSpace(headlines))
-            {
-                sections.Add(headlines);
             }
         }
 

@@ -1,6 +1,7 @@
 using JarvisNet.Audio.DependencyInjection;
 using JarvisNet.Engine.Abstractions;
 using JarvisNet.Engine.DependencyInjection;
+using JarvisNet.Engine.Services;
 using JarvisNet.UI.Hubs;
 using JarvisNet.UI.Services;
 
@@ -37,6 +38,19 @@ app.MapPost("/api/stop", async (IJarvisNetEngine engine, CancellationToken cance
 {
     await engine.StopVoiceSessionAsync(cancellationToken).ConfigureAwait(false);
     return Results.Ok(new { status = "idle" });
+});
+
+app.MapGet("/api/modules", (JarvisModuleCatalogService catalog) =>
+{
+    var modules = catalog.GetModules()
+        .Select(m => new
+        {
+            id = m.Id,
+            kind = m.Kind,
+            toolCount = m.ToolCount,
+            description = m.Description,
+        });
+    return Results.Ok(modules);
 });
 
 app.MapFallbackToFile("index.html");

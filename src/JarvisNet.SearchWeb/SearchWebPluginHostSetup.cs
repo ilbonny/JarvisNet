@@ -17,26 +17,52 @@ public sealed class SearchWebPluginHostSetup : IJarvisPluginHostSetup
         _ = configuration;
 
         services.AddJarvisPluginTurnHandler<SearchWebPluginTurnHandler>();
+
+        // Configurazione client HTTP per Wikipedia
         services.AddHttpClient(
             WikipediaSummarySearchServiceRegistration.HttpClientName,
             static client => WikipediaSummarySearchServiceRegistration.ConfigureClient(client));
+
+        // Configurazione client HTTP per DuckDuckGo
+        var duckDuckGoHttpClientName = DuckDuckGoSearchServiceRegistration.HttpClientName;
+        services.AddHttpClient(
+            duckDuckGoHttpClientName,
+            static client => DuckDuckGoSearchServiceRegistration.ConfigureClient(client));
+
+        services.AddHttpClient(
+            GoogleNewsRssSearchServiceRegistration.HttpClientName,
+            static client => GoogleNewsRssSearchServiceRegistration.ConfigureClient(client));
 
         services.AddSingleton(sp =>
         {
             var culture = ResolveSearchCulture(sp);
             var factory = sp.GetRequiredService<IHttpClientFactory>();
             var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
-            var wikiClient = WikipediaSummarySearchServiceRegistration.ConfigureClient(
-                factory.CreateClient(WikipediaSummarySearchServiceRegistration.HttpClientName));
+
+            // Configurazione Wikipedia Search Service con HttpClient gestito dal DI container
+            var wikiClientName = WikipediaSummarySearchServiceRegistration.HttpClientName;
             var wikipediaSearch = new WikipediaSummarySearchService(
-                wikiClient,
+                factory.CreateClient(wikiClientName),
                 loggerFactory.CreateLogger<WikipediaSummarySearchService>(),
                 culture);
 
-            return new InternetSearchService(
-                wikipediaSearch,
+            // Configurazione DuckDuckGo Search Service con HttpClient gestito dal DI container
+            var duckDuckGoClient = factory.CreateClient(duckDuckGoHttpClientName);
+            var duckDuckGoSearch = new DuckDuckGoSearchService(
+                duckDuckGoClient,
+                loggerFactory.CreateLogger<DuckDuckGoSearchService>(),
                 culture,
-                loggerFactory.CreateLogger<InternetSearchService>());
+                wikipediaSearch: wikipediaSearch);
+
+            var googleNewsSearch = new GoogleNewsRssSearchService(
+                factory.CreateClient(GoogleNewsRssSearchServiceRegistration.HttpClientName),
+                loggerFactory.CreateLogger<GoogleNewsRssSearchService>(),
+                culture);
+
+            return new InternetSearchService(
+                duckDuckGoSearch,
+                culture,
+                googleNewsSearch);
         });
     }
 

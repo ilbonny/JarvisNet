@@ -1,47 +1,76 @@
 using System.Globalization;
 using System.Text;
-using Microsoft.Extensions.Logging;
 
 namespace JarvisNet.SearchWeb;
 
+/// <summary>
+/// Ricerca web: DuckDuckGo (+ Wikipedia in fallback) oppure Google News RSS solo per intent notizie.
+/// </summary>
 public sealed class InternetSearchService
 {
-    private readonly WikipediaSummarySearchService _wikipedia;
+    private readonly DuckDuckGoSearchService _duckDuckGo;
+    private readonly GoogleNewsRssSearchService? _newsSearch;
+    private readonly CultureInfo _culture;
     private readonly SearchResultLabels _labels;
-    private readonly ILogger<InternetSearchService> _logger;
 
     public InternetSearchService(
-        WikipediaSummarySearchService wikipedia,
+        DuckDuckGoSearchService duckDuckGo,
         CultureInfo culture,
-        ILogger<InternetSearchService> logger)
+        GoogleNewsRssSearchService? newsSearch = null)
     {
-        _wikipedia = wikipedia;
-        _labels = SearchResultLabelsForCulture.Get(culture);
-        _logger = logger;
+        _duckDuckGo = duckDuckGo ?? throw new ArgumentNullException(nameof(duckDuckGo));
+        _culture = culture ?? CultureInfo.InvariantCulture;
+        _newsSearch = newsSearch;
+        _labels = SearchResultLabelsForCulture.Get(_culture);
     }
 
     public async Task<string> SearchAsync(string query, int maxRelatedTopics, CancellationToken cancellationToken)
     {
-        _ = maxRelatedTopics;
-
         var trimmed = SearchQueryNormalizer.Normalize(query.Trim());
+
         if (string.IsNullOrEmpty(trimmed))
         {
             return _labels.EmptyQuery;
         }
 
-        _logger.LogInformation("Wikipedia lookup: {Query}", trimmed);
+        maxRelatedTopics = Math.Clamp(maxRelatedTopics, 1, 15);
 
-        var wiki = await _wikipedia.TryFetchSummaryAsync(trimmed, cancellationToken).ConfigureAwait(false);
-        if (!string.IsNullOrWhiteSpace(wiki))
+        if (SearchQueryNormalizer.IsNewsQuery(trimmed)
+            || SearchQueryNormalizer.IsNewsQuery(query))
         {
-            return wiki;
+            return await SearchNewsAsync(trimmed, maxRelatedTopics, cancellationToken).ConfigureAwait(false);
         }
 
-        var builder = new StringBuilder();
-        builder.AppendLine(string.Format(_labels.WebSearchHeader, trimmed));
-        builder.AppendLine();
-        builder.AppendLine(_labels.NoWebResults);
-        return builder.ToString().TrimEnd();
+        return await _duckDuckGo.SearchAsync(trimmed, maxRelatedTopics, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<string> SearchNewsAsync(
+        string trimmed,
+        int maxRelatedTopics,
+        CancellationToken cancellationToken)
+    {
+        if (_newsSearch is null)
+        {
+            var unavailable = new StringBuilder();
+            unavailable.AppendLine(string.Format(_labels.WebSearchHeader, trimmed));
+            unavailable.AppendLine();
+            unavailable.AppendLine(_labels.NoWebResults);
+            return unavailable.ToString().TrimEnd();
+        }
+
+        var headlines = await _newsSearch
+            .TryFetchHeadlinesAsync(trimmed, maxRelatedTopics, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!string.IsNullOrWhiteSpace(headlines))
+        {
+            return headlines;
+        }
+
+        var empty = new StringBuilder();
+        empty.AppendLine(string.Format(_labels.WebSearchHeader, trimmed));
+        empty.AppendLine();
+        empty.AppendLine(_labels.NoWebResults);
+        return empty.ToString().TrimEnd();
     }
 }

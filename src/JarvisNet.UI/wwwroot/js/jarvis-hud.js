@@ -8,6 +8,30 @@
   let cx = canvas.width / 2;
   let cy = canvas.height / 2;
 
+  function syncCanvasSize() {
+    const host = canvas.parentElement;
+    if (!host) return;
+    const size = Math.floor(Math.min(host.clientWidth, host.clientHeight));
+    if (size <= 0) return;
+    canvas.style.width = size + "px";
+    canvas.style.height = size + "px";
+  }
+
+  syncCanvasSize();
+  if (typeof ResizeObserver !== "undefined") {
+    const host = canvas.parentElement;
+    if (host) {
+      new ResizeObserver(syncCanvasSize).observe(host);
+    }
+  }
+  window.addEventListener("load", syncCanvasSize);
+
+  window.jarvisHudRedrawLinks = function () {
+    if (window.jarvisModuleOrbit && window.jarvisModuleOrbit.redraw) {
+      window.jarvisModuleOrbit.redraw();
+    }
+  };
+
   function maxDrawRadius(extraMargin) {
     return Math.min(cx, cy) - (extraMargin || 0);
   }
@@ -253,8 +277,20 @@
       drawLabel(labelGlow + smoothLevel * 0.35);
     }
 
+    if (typeof window.jarvisHudRedrawLinks === "function") {
+      window.__hudLinkRedrawCounter = (window.__hudLinkRedrawCounter || 0) + 1;
+      if (window.__hudLinkRedrawCounter % 45 === 0) {
+        window.jarvisHudRedrawLinks();
+      }
+    }
+
     requestAnimationFrame(frame);
   }
 
   requestAnimationFrame(frame);
+  setTimeout(function () {
+    if (window.jarvisHudRedrawLinks) {
+      window.jarvisHudRedrawLinks();
+    }
+  }, 100);
 })();

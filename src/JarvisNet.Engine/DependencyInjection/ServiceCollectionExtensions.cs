@@ -64,6 +64,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>(sp =>
             sp.GetRequiredService<Kernel>().GetRequiredService<Microsoft.SemanticKernel.ChatCompletion.IChatCompletionService>());
 
+        services.AddSingleton<JarvisModuleCatalogService>();
         services.AddSingleton<McpClientManager>();
         services.AddHostedService(sp => sp.GetRequiredService<McpClientManager>());
 

@@ -1,72 +1,120 @@
 (function () {
   "use strict";
 
+  const statusWrap = document.getElementById("connection-status-wrap");
   const statusEl = document.getElementById("connection-status");
   const chatLog = document.getElementById("chat-log");
-  const btnStart = document.getElementById("btn-start");
-  const btnStop = document.getElementById("btn-stop");
+  const btnMic = document.getElementById("btn-mic");
+  const micLabel = btnMic ? btnMic.querySelector(".mic-label") : null;
+  const btnClearChat = document.getElementById("btn-clear-chat");
 
-  let jarvisLine = null;
+  let jarvisRow = null;
+  let jarvisTextEl = null;
   let jarvisText = "";
+  let sessionActive = false;
+
+  const micStateLabels = {
+    Idle: "STANDBY",
+    Listening: "LISTENING",
+    Thinking: "THINKING",
+    Speaking: "SPEAKING",
+    ExecutingMcpTool: "MCP",
+  };
 
   function setStatus(connected) {
-    if (!statusEl) return;
-    statusEl.textContent = connected ? "CONNECTED" : "DISCONNECTED";
-    statusEl.classList.toggle("status-connected", connected);
-    statusEl.classList.toggle("status-disconnected", !connected);
+    if (statusEl) {
+      statusEl.textContent = connected ? "CONNECTED" : "DISCONNECTED";
+    }
+    if (!statusWrap) return;
+    statusWrap.classList.toggle("status-connected", connected);
+    statusWrap.classList.toggle("status-disconnected", !connected);
   }
 
-  function appendMcpLogLine(text) {
+  function setMicSession(active) {
+    sessionActive = active;
+    if (btnMic) {
+      btnMic.classList.toggle("mic-active", active);
+      btnMic.setAttribute("aria-pressed", active ? "true" : "false");
+      btnMic.setAttribute(
+        "aria-label",
+        active ? "Disabilita microfono" : "Abilita microfono"
+      );
+    }
+    if (!active && micLabel) {
+      micLabel.textContent = "IDLE";
+    }
+  }
+
+  function updateMicLabel(state) {
+    if (!micLabel || !sessionActive) return;
+    micLabel.textContent = micStateLabels[state] || String(state).toUpperCase();
+  }
+
+  function formatTime() {
+    const d = new Date();
+    return d.toTimeString().slice(0, 8);
+  }
+
+  function scrollChatToBottom() {
     if (!chatLog) return;
-    const line = document.createElement("div");
-    line.className = "chat-line mcp-log-line";
-    line.textContent = text;
-    chatLog.appendChild(line);
     chatLog.scrollTop = chatLog.scrollHeight;
   }
 
   function appendUserLine(text) {
     if (!chatLog) return;
-    const line = document.createElement("div");
-    line.className = "chat-line";
-    line.innerHTML =
-      '<span class="prefix-user">USER:</span> "' +
+    const row = document.createElement("div");
+    row.className = "msg-row msg-user";
+    row.innerHTML =
+      '<div class="msg-bubble">' +
+      '<p class="msg-text">' +
       escapeHtml(text) +
-      '"';
-    chatLog.appendChild(line);
-    chatLog.scrollTop = chatLog.scrollHeight;
+      "</p>" +
+      '<time class="msg-time">' +
+      formatTime() +
+      "</time>" +
+      "</div>" +
+      '<div class="msg-avatar user-avatar" aria-hidden="true"></div>';
+    chatLog.appendChild(row);
+    scrollChatToBottom();
   }
 
   function beginJarvisLine() {
     if (!chatLog) return;
     jarvisText = "";
-    jarvisLine = document.createElement("div");
-    jarvisLine.className = "chat-line";
-    jarvisLine.innerHTML =
-      '<span class="prefix-jarvis">JARVIS:</span> "<span class="jarvis-body"></span><span class="typewriter-cursor">|</span>"';
-    chatLog.appendChild(jarvisLine);
+    jarvisRow = document.createElement("div");
+    jarvisRow.className = "msg-row msg-jarvis";
+    jarvisRow.innerHTML =
+      '<div class="msg-avatar jarvis-avatar" aria-hidden="true"></div>' +
+      '<div class="msg-bubble">' +
+      '<p class="msg-text"><span class="jarvis-body"></span><span class="typewriter-cursor">|</span></p>' +
+      '<time class="msg-time">' +
+      formatTime() +
+      "</time>" +
+      "</div>";
+    chatLog.appendChild(jarvisRow);
+    jarvisTextEl = jarvisRow.querySelector(".jarvis-body");
   }
 
   function appendJarvisChunk(chunk) {
     if (!chunk) return;
-    if (!jarvisLine) {
+    if (!jarvisRow) {
       beginJarvisLine();
     }
     jarvisText += chunk;
-    const body = jarvisLine.querySelector(".jarvis-body");
-    if (body) {
-      body.textContent = jarvisText;
+    if (jarvisTextEl) {
+      jarvisTextEl.textContent = jarvisText;
     }
-    chatLog.scrollTop = chatLog.scrollHeight;
+    scrollChatToBottom();
   }
 
   function finalizeJarvisLine() {
-    if (!jarvisLine) return;
-    const cursor = jarvisLine.querySelector(".typewriter-cursor");
+    if (!jarvisRow) return;
+    const cursor = jarvisRow.querySelector(".typewriter-cursor");
     if (cursor) {
       cursor.remove();
     }
-    jarvisLine = null;
+    jarvisRow = null;
+    jarvisTextEl = null;
     jarvisText = "";
   }
 
@@ -86,12 +134,30 @@
   connection.on("StateChanged", (state) => {
     window.mcpActiveTool = null;
     window.jarvisState = state;
+    updateMicLabel(state);
+  });
+
+  connection.on("ModulesCatalog", (modules) => {
+    if (window.jarvisModuleOrbit) {
+      window.jarvisModuleOrbit.setModules(modules);
+    }
+  });
+
+  connection.on("ModuleToolStarted", (payload) => {
+    if (window.jarvisModuleOrbit) {
+      window.jarvisModuleOrbit.onToolStarted(payload);
+    }
+  });
+
+  connection.on("ModuleToolFinished", (payload) => {
+    if (window.jarvisModuleOrbit) {
+      window.jarvisModuleOrbit.onToolFinished(payload);
+    }
   });
 
   connection.on("McpToolExecuting", (toolName) => {
     window.mcpActiveTool = toolName;
     window.jarvisState = "ExecutingMcpTool";
-    appendMcpLogLine("[MCP Executing: " + toolName + "]");
   });
 
   connection.on("AudioLevel", (level) => {
@@ -129,22 +195,41 @@
     }
   }
 
-  if (btnStart) {
-    btnStart.addEventListener("click", async () => {
+  if (btnMic) {
+    btnMic.addEventListener("click", async () => {
+      const turningOn = !sessionActive;
+      const endpoint = turningOn ? "/api/start" : "/api/stop";
+      const previousActive = sessionActive;
+
+      setMicSession(turningOn);
+      if (turningOn) {
+        updateMicLabel(window.jarvisState || "Idle");
+      }
+
       try {
-        await fetch("/api/start", { method: "POST" });
+        const res = await fetch(endpoint, { method: "POST" });
+        if (!res.ok) {
+          setMicSession(previousActive);
+          if (previousActive) {
+            updateMicLabel(window.jarvisState || "Idle");
+          }
+          return;
+        }
       } catch (e) {
         console.error(e);
+        setMicSession(previousActive);
+        if (previousActive) {
+          updateMicLabel(window.jarvisState || "Idle");
+        }
       }
     });
   }
 
-  if (btnStop) {
-    btnStop.addEventListener("click", async () => {
-      try {
-        await fetch("/api/stop", { method: "POST" });
-      } catch (e) {
-        console.error(e);
+  if (btnClearChat) {
+    btnClearChat.addEventListener("click", () => {
+      finalizeJarvisLine();
+      if (chatLog) {
+        chatLog.innerHTML = "";
       }
     });
   }

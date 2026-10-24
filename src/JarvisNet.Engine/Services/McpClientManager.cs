@@ -16,6 +16,7 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
 {
     private readonly Kernel _kernel;
     private readonly McpOptions _options;
+    private readonly JarvisModuleCatalogService _moduleCatalog;
     private readonly ILogger<McpClientManager> _logger;
     private readonly List<McpClient> _clients = [];
     private readonly Lock _clientLock = new();
@@ -33,10 +34,12 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
     public McpClientManager(
         Kernel kernel,
         IOptions<McpOptions> options,
+        JarvisModuleCatalogService moduleCatalog,
         ILogger<McpClientManager> logger)
     {
         _kernel = kernel;
         _options = options.Value;
+        _moduleCatalog = moduleCatalog;
         _logger = logger;
     }
 
@@ -138,7 +141,7 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
         }
 
         var tools = await client.ListToolsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-        var pluginName = SanitizePluginName(serverKey);
+        var pluginName = McpPluginNaming.SanitizePluginName(serverKey);
         var functions = new List<KernelFunction>();
 
         foreach (var tool in tools)
@@ -168,6 +171,7 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
             serverKey,
             functions.Count,
             pluginName);
+        _moduleCatalog.NotifyCatalogChanged();
     }
 
     private KernelFunction CreateKernelFunction(McpClient client, string pluginName, McpClientTool tool)
@@ -484,30 +488,11 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
         }
     }
 
-    private static string SanitizePluginName(string serverKey)
-    {
-        var sanitized = InvalidPluginNameChars().Replace(serverKey, "_").Trim('_');
-        if (string.IsNullOrEmpty(sanitized))
-        {
-            sanitized = "McpServer";
-        }
-
-        if (!char.IsLetter(sanitized[0]) && sanitized[0] != '_')
-        {
-            sanitized = "Mcp_" + sanitized;
-        }
-
-        return sanitized;
-    }
-
     private static string SanitizeFunctionName(string toolName)
     {
         var sanitized = InvalidFunctionNameChars().Replace(toolName, "_").Trim('_');
         return string.IsNullOrEmpty(sanitized) ? "tool" : sanitized;
     }
-
-    [GeneratedRegex(@"[^a-zA-Z0-9_]", RegexOptions.CultureInvariant)]
-    private static partial Regex InvalidPluginNameChars();
 
     [GeneratedRegex(@"[^a-zA-Z0-9_]", RegexOptions.CultureInvariant)]
     private static partial Regex InvalidFunctionNameChars();

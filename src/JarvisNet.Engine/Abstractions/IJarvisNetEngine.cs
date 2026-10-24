@@ -1,4 +1,5 @@
 using JarvisNet.Core.Enums;
+using JarvisNet.Engine.Models;
 using Microsoft.SemanticKernel;
 
 namespace JarvisNet.Engine.Abstractions;
@@ -16,6 +17,10 @@ public interface IJarvisNetEngine
     event EventHandler<float>? AudioLevelChanged;
 
     event EventHandler<string>? McpToolExecuting;
+
+    event EventHandler<ModuleToolEventArgs>? ModuleToolExecutionStarted;
+
+    event EventHandler<ModuleToolEventArgs>? ModuleToolExecutionCompleted;
 
     Task<string> SendAsync(string userMessage, CancellationToken cancellationToken = default);
 
