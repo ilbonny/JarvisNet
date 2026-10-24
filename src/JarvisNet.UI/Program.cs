@@ -20,6 +20,7 @@ builder.Services.AddJarvisNetAudio(builder.Configuration);
 builder.Services.AddJarvisNetEngine(builder.Configuration);
 builder.Services.AddSignalR();
 builder.Services.AddHostedService<JarvisUiEventBridge>();
+builder.Services.AddSingleton<SystemStatusProvider>();
 
 var app = builder.Build();
 
@@ -39,6 +40,9 @@ app.MapPost("/api/stop", async (IJarvisNetEngine engine, CancellationToken cance
     await engine.StopVoiceSessionAsync(cancellationToken).ConfigureAwait(false);
     return Results.Ok(new { status = "idle" });
 });
+
+app.MapGet("/api/system-status", (SystemStatusProvider telemetry) =>
+    Results.Ok(telemetry.GetSnapshot()));
 
 app.MapGet("/api/modules", (JarvisModuleCatalogService catalog) =>
 {
