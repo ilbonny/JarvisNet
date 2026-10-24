@@ -74,6 +74,8 @@ publish/
 ## User-specific secrets (keep templates, ignore local overrides if you use them)
 secrets.json
 *.Development.local.json
+config/jarvisnet.mcp.secrets.json
+config/jarvisnet.mcp.secrets.env
 ## OS
 .DS_Store
 Thumbs.db

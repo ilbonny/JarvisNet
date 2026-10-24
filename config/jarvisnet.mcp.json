@@ -5,6 +5,12 @@
       "Args": ["-y", "@playwright/mcp@latest"],
       "Enabled": true,
       "Env": {}
+    },
+    "Slack": {
+      "Command": "npx",
+      "Args": ["-y", "slack-mcp-server@latest", "--transport", "stdio"],
+      "Enabled": false,
+      "Env": {}
     }
   }
 }

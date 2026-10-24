@@ -90,6 +90,7 @@ public sealed class SherpaOnnxSttService : ISpeechToTextService
             if (!string.IsNullOrWhiteSpace(text) && !string.Equals(text, _lastPartialText, StringComparison.Ordinal))
             {
                 _lastPartialText = text;
+                _logger.LogDebug("STT parziale: {Text}", text);
                 RaiseSpeechRecognized(text, isFinal: false);
             }
 
@@ -97,7 +98,12 @@ public sealed class SherpaOnnxSttService : ISpeechToTextService
             {
                 if (SpeechTranscriptFilter.IsMeaningfulFinalTranscript(text))
                 {
+                    _logger.LogInformation("STT finale: {Text}", text);
                     RaiseSpeechRecognized(text, isFinal: true);
+                }
+                else if (!string.IsNullOrWhiteSpace(text))
+                {
+                    _logger.LogInformation("STT finale ignorato (troppo corto o senza testo): {Text}", text);
                 }
 
                 _recognizer.Reset(_stream);

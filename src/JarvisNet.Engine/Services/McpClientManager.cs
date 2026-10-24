@@ -429,15 +429,18 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
             merged[key] = value;
         }
 
-        if (string.Equals(serverKey, "Playwright", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(serverKey, "Playwright", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(serverKey, "Slack", StringComparison.OrdinalIgnoreCase))
         {
             NodeToolchainResolver.PrependNodeToPath(merged);
-            if (!merged.ContainsKey("PLAYWRIGHT_BROWSERS_PATH"))
-            {
-                merged["PLAYWRIGHT_BROWSERS_PATH"] = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "ms-playwright");
-            }
+        }
+
+        if (string.Equals(serverKey, "Playwright", StringComparison.OrdinalIgnoreCase)
+            && !merged.ContainsKey("PLAYWRIGHT_BROWSERS_PATH"))
+        {
+            merged["PLAYWRIGHT_BROWSERS_PATH"] = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ms-playwright");
         }
 
         return merged;
