@@ -11,6 +11,12 @@
       "Args": ["-y", "slack-mcp-server@latest", "--transport", "stdio"],
       "Enabled": false,
       "Env": {}
+    },
+    "Gmail": {
+      "Command": "npx",
+      "Args": ["-y", "gmail-mcp-imap"],
+      "Enabled": false,
+      "Env": {}
     }
   }
 }

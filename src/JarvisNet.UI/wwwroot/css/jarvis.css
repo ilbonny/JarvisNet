@@ -347,6 +347,56 @@ body {
   min-height: 0;
   padding: 0.5rem 1rem;
   overflow: visible;
+  position: relative;
+}
+
+.brain-bg {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(1400px, 128%);
+  height: min(1400px, calc(100vh - 3.5rem));
+  max-width: calc(100vw - min(400px, 32vw) - 0.5rem);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+  animation: brain-bg-breathe 8s ease-in-out infinite;
+}
+
+.brain-bg-outline {
+  fill: url(#brain-bg-fill);
+  stroke: rgba(0, 229, 255, 0.22);
+  stroke-width: 1.8;
+  vector-effect: non-scaling-stroke;
+}
+
+.brain-bg-inner {
+  fill: none;
+  stroke: rgba(0, 229, 255, 0.1);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.brain-bg-sulcus {
+  fill: none;
+  stroke: rgba(102, 255, 255, 0.09);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.brain-bg-halo {
+  fill: rgba(0, 229, 255, 0.035);
+  stroke: none;
+}
+
+@keyframes brain-bg-breathe {
+  0%,
+  100% {
+    opacity: 0.78;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .hud-panel {
@@ -354,6 +404,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .hud-stage {
@@ -771,6 +823,12 @@ body {
   .left-stage {
     padding: 0.5rem 0.25rem;
     overflow: visible;
+  }
+
+  .brain-bg {
+    width: min(520px, 112vw);
+    height: min(520px, calc(100vh - 5rem));
+    max-width: none;
   }
 
   .hud-stage {

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using JarvisNet.Engine.Infrastructure;
@@ -183,7 +184,9 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
         async Task<string> InvokeAsync(KernelArguments arguments, CancellationToken cancellationToken)
         {
             var displayName = $"{pluginName}.{toolName}";
-            var args = ToArgumentDictionary(arguments);
+            var args = CoerceArgumentsForSchema(
+                tool.ProtocolTool.InputSchema,
+                ToArgumentDictionary(arguments));
             if (TryGetLoopGuardResponse(toolName, args, out var guardMessage))
             {
                 _logger.LogWarning(
@@ -345,6 +348,94 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
         return dict;
     }
 
+    private static Dictionary<string, object?> CoerceArgumentsForSchema(
+        JsonElement schema,
+        Dictionary<string, object?> args)
+    {
+        if (schema.ValueKind != JsonValueKind.Object
+            || !schema.TryGetProperty("properties", out var properties)
+            || properties.ValueKind != JsonValueKind.Object)
+        {
+            return args;
+        }
+
+        var coerced = new Dictionary<string, object?>(args.Count, StringComparer.Ordinal);
+        foreach (var (key, value) in args)
+        {
+            if (properties.TryGetProperty(key, out var propertySchema))
+            {
+                coerced[key] = CoerceValueToJsonSchemaType(propertySchema, value);
+            }
+            else
+            {
+                coerced[key] = value;
+            }
+        }
+
+        return coerced;
+    }
+
+    private static object? CoerceValueToJsonSchemaType(JsonElement propertySchema, object? value)
+    {
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (!propertySchema.TryGetProperty("type", out var typeElement)
+            || typeElement.ValueKind != JsonValueKind.String)
+        {
+            return value;
+        }
+
+        return typeElement.GetString() switch
+        {
+            "integer" => CoerceToLong(value) ?? value,
+            "number" => CoerceToDouble(value) ?? value,
+            "boolean" => CoerceToBool(value) ?? value,
+            _ => value,
+        };
+    }
+
+    private static long? CoerceToLong(object value) =>
+        value switch
+        {
+            long l => l,
+            int i => i,
+            double d => (long)d,
+            float f => (long)f,
+            string s when long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) => parsed,
+            JsonElement { ValueKind: JsonValueKind.Number } je when je.TryGetInt64(out var jl) => jl,
+            JsonElement { ValueKind: JsonValueKind.String } je
+                when long.TryParse(je.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var jls) => jls,
+            _ => null,
+        };
+
+    private static double? CoerceToDouble(object value) =>
+        value switch
+        {
+            double d => d,
+            float f => f,
+            long l => l,
+            int i => i,
+            string s when double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) => parsed,
+            JsonElement { ValueKind: JsonValueKind.Number } je when je.TryGetDouble(out var jd) => jd,
+            JsonElement { ValueKind: JsonValueKind.String } je
+                when double.TryParse(je.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var jds) => jds,
+            _ => null,
+        };
+
+    private static bool? CoerceToBool(object value) =>
+        value switch
+        {
+            bool b => b,
+            string s when bool.TryParse(s, out var parsed) => parsed,
+            JsonElement { ValueKind: JsonValueKind.True } => true,
+            JsonElement { ValueKind: JsonValueKind.False } => false,
+            JsonElement { ValueKind: JsonValueKind.String } je when bool.TryParse(je.GetString(), out var jb) => jb,
+            _ => null,
+        };
+
     private static object? JsonElementToObject(JsonElement element) =>
         element.ValueKind switch
         {
@@ -430,7 +521,8 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
         }
 
         if (string.Equals(serverKey, "Playwright", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(serverKey, "Slack", StringComparison.OrdinalIgnoreCase))
+            || string.Equals(serverKey, "Slack", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(serverKey, "Gmail", StringComparison.OrdinalIgnoreCase))
         {
             NodeToolchainResolver.PrependNodeToPath(merged);
         }

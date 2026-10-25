@@ -180,6 +180,36 @@ Esempi in chat: *«Leggi gli ultimi messaggi su #idee»* (tool `conversations_hi
 
 > **Nota:** non mettere il token in `jarvisnet.mcp.json` (file committato). Evita righe vuote tipo `SLACK_MCP_XOXP_TOKEN=` in `.secrets.env`: sovrascrivono il valore nel JSON.
 
+### Aggiungere Gmail (IMAP, senza Google Cloud)
+
+Usiamo [`gmail-mcp-imap`](https://www.npmjs.com/package/gmail-mcp-imap): accesso via **IMAP** con **password per le app** — niente progetto Google Cloud, niente trial fatturazione.
+
+1. **Gmail** → Impostazioni → **Inoltro e POP/IMAP** → abilita **IMAP**.
+2. **Account Google** — [Sicurezza](https://myaccount.google.com/security):
+   - attiva **Verifica in due passaggi**;
+   - **Password per le app** (cerca “Password per le app”) → app **Mail** → copia la password di 16 caratteri (non la password Gmail normale).
+3. **Secrets** in [`config/jarvisnet.mcp.secrets.json`](config/jarvisnet.mcp.secrets.json):
+
+```json
+{
+  "McpServers": {
+    "Gmail": {
+      "Enabled": true,
+      "Env": {
+        "GMAIL_EMAIL": "tuo@gmail.com",
+        "GMAIL_APP_PASSWORD": "xxxx xxxx xxxx xxxx"
+      }
+    }
+  }
+}
+```
+
+4. **Riavvia** l’host. Nei log: `Server MCP Gmail: registrati N tool`.
+
+Esempi in chat: *«Leggi le ultime mail in Primary»*, *«Cerca mail non lette di questa settimana»*. I tool espongono anche invio/modifica: chiedi esplicitamente solo **lettura** se non vuoi azioni di scrittura.
+
+> **Nota:** su **Google Workspace** l’admin può disabilitare IMAP. In quel caso serve l’API OAuth (Google Cloud) o il [MCP ufficiale remoto](https://developers.google.com/workspace/gmail/api/guides/configure-mcp-server?hl=it). Revoca l’accesso eliminando la password per le app in qualsiasi momento.
+
 ### Altri MCP
 
 Aggiungi una chiave in `McpServers` in `jarvisnet.mcp.json` (`Command`, `Args`, `Enabled`, `Env`). Playwright usa anche [`config/playwright-mcp.json`](config/playwright-mcp.json).

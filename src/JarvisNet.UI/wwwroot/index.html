@@ -114,6 +114,37 @@
 
   <main class="layout">
     <div class="left-stage">
+      <svg class="brain-bg" viewBox="0 0 640 640" aria-hidden="true" focusable="false">
+        <defs>
+          <radialGradient id="brain-bg-fill" cx="50%" cy="46%" r="52%">
+            <stop offset="0%" stop-color="rgba(0, 140, 180, 0.14)" />
+            <stop offset="55%" stop-color="rgba(0, 70, 110, 0.08)" />
+            <stop offset="100%" stop-color="rgba(2, 18, 36, 0)" />
+          </radialGradient>
+          <filter id="brain-bg-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <g class="brain-bg-shape" filter="url(#brain-bg-glow)">
+          <path
+            class="brain-bg-outline"
+            d="M 320 102 C 255 102 198 118 168 158 C 138 198 128 252 136 302 C 144 352 168 398 208 432 C 242 460 278 476 320 478 C 362 476 398 460 432 432 C 472 398 496 352 504 302 C 512 252 502 198 472 158 C 442 118 385 102 320 102 Z"
+          />
+          <path
+            class="brain-bg-inner"
+            d="M 320 128 C 272 128 228 142 204 178 C 180 214 174 258 180 302 C 186 346 208 384 244 408 C 272 428 296 438 320 440 C 344 438 368 428 396 408 C 432 384 454 346 460 302 C 466 258 460 214 436 178 C 412 142 368 128 320 128 Z"
+          />
+          <path class="brain-bg-sulcus" d="M 320 118 C 318 200 322 290 320 468" />
+          <path class="brain-bg-sulcus" d="M 248 168 C 268 220 278 280 268 360" />
+          <path class="brain-bg-sulcus" d="M 392 168 C 372 220 362 280 372 360" />
+          <path class="brain-bg-sulcus" d="M 200 260 C 250 248 290 252 320 255 C 350 252 390 248 440 260" />
+        </g>
+        <ellipse class="brain-bg-halo" cx="320" cy="300" rx="240" ry="265" />
+      </svg>
       <aside class="hud-panel" aria-label="JARVIS HUD">
         <div class="hud-stage" id="hud-stage">
           <svg class="hud-orbit-links" id="hud-orbit-links" aria-hidden="true"></svg>
