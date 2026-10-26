@@ -88,6 +88,7 @@ Modelli ONNX e Piper condivisi (root repo, usati da TestApp e host reali):
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/Download-Models.ps1
 powershell -ExecutionPolicy Bypass -File scripts/Download-Models.ps1 -Locale es
+powershell -ExecutionPolicy Bypass -File scripts/Download-Models.ps1 -Locale en
 powershell -ExecutionPolicy Bypass -File scripts/Download-Piper.ps1
 ```
 
@@ -114,12 +115,14 @@ Voce TTS (`JarvisNet:Audio:PiperVoiceKey`):
 | Chiave | Lingua | Voce |
 |--------|--------|------|
 | `it_IT-paola-medium` | IT | donna (default) |
-| `it_IT-riccardo-x_low` | IT | uomo (bassa qualità) |
-| `it_IT-miro-medium` | IT | uomo (medium, OpenVoiceOS) |
+| `it_IT-leonardo-medium` | IT | uomo (kirys79) |
+| `it_IT-giorgio-medium` | IT | uomo (kirys79) |
 | `es_ES-sharvard-medium` | ES (Spagna) | donna (speaker 1, consigliata) |
 | `es_ES-mls_10246-low` | ES | donna (bassa qualità) |
 | `es_AR-daniela-high` | ES (Argentina) | donna, alta qualità |
 | `es_ES-carlfm-x_low` | ES | uomo |
+| `en_US-ljspeech-high` | EN (US) | donna, alta qualità |
+| `en_US-ryan-high` | EN (US) | uomo, alta qualità |
 
 Test vocale interattivo (solo audio):
 

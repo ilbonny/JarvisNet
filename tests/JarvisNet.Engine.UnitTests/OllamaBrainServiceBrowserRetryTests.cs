@@ -34,7 +34,7 @@ public sealed class OllamaBrainServiceBrowserRetryTests
         [
             new SearchWebPluginTurnHandler(
                 NullLogger<SearchWebPluginTurnHandler>.Instance,
-                Microsoft.Extensions.Options.Options.Create(new JarvisLocaleOptions { CultureName = "it-IT" })),
+                new TestOptionsMonitor<JarvisLocaleOptions>(new JarvisLocaleOptions { CultureName = "it-IT" })),
         ];
         var service = new OllamaBrainService(
             fake,

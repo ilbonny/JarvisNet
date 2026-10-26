@@ -113,6 +113,29 @@
   </header>
 
   <main class="layout">
+    <aside class="voice-settings-panel" aria-label="Voce e lingua">
+      <header class="voice-panel-header">
+        <span class="voice-panel-title">VOICE &amp; LANGUAGE</span>
+        <span class="voice-panel-status" id="voice-panel-status">Loading</span>
+      </header>
+      <div class="voice-panel-wave" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="voice-panel-fields">
+        <label class="voice-panel-row">
+          <span class="voice-panel-label">Language</span>
+          <select id="audio-language-select" class="voice-panel-select" aria-label="Lingua">
+            <option value="">—</option>
+          </select>
+        </label>
+        <label class="voice-panel-row">
+          <span class="voice-panel-label">Voice</span>
+          <select id="audio-voice-select" class="voice-panel-select" aria-label="Voce TTS">
+            <option value="">—</option>
+          </select>
+        </label>
+      </div>
+    </aside>
     <div class="left-stage">
       <svg class="brain-bg" viewBox="0 0 640 640" aria-hidden="true" focusable="false">
         <defs>
@@ -170,6 +193,7 @@
   </main>
 
   <script src="js/jarvis-system-status.js"></script>
+  <script src="js/jarvis-voice-panel.js"></script>
   <script src="js/jarvis-clock.js"></script>
   <script src="js/jarvis-module-orbit.js"></script>
   <script src="js/jarvis-hud.js"></script>

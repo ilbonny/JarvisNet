@@ -15,15 +15,18 @@ namespace JarvisNet.SearchWeb;
 public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
 {
     private readonly ILogger<SearchWebPluginTurnHandler> _logger;
-    private readonly CultureInfo _responseCulture;
+    private readonly IOptionsMonitor<JarvisLocaleOptions> _localeOptions;
 
     public SearchWebPluginTurnHandler(
         ILogger<SearchWebPluginTurnHandler> logger,
-        IOptions<JarvisLocaleOptions> localeOptions)
+        IOptionsMonitor<JarvisLocaleOptions> localeOptions)
     {
         _logger = logger;
-        _responseCulture = JarvisLocaleResolver.CreateCulture(localeOptions.Value.CultureName);
+        _localeOptions = localeOptions;
     }
+
+    private CultureInfo ResponseCulture =>
+        JarvisLocaleResolver.CreateCulture(_localeOptions.CurrentValue.CultureName);
 
     public Task<JarvisPluginTurnOutcome?> TryEnhanceTurnAsync(
         JarvisPluginTurnContext context,
@@ -151,7 +154,7 @@ public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
                 context,
                 searchQuery,
                 raw,
-                _responseCulture,
+                ResponseCulture,
                 cancellationToken)
             .ConfigureAwait(false);
     }

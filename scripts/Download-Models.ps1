@@ -1,6 +1,6 @@
 # Scarica modelli condivisi in <repo>/models (STT + TTS)
 param(
-    [ValidateSet("it", "es", "all")]
+    [ValidateSet("it", "es", "en", "all")]
     [string]$Locale = "all"
 )
 
@@ -55,16 +55,26 @@ if ($Locale -eq "it" -or $Locale -eq "all") {
     Write-Host "=== Italiano (STT + TTS) ==="
     Get-SherpaKroko -LangFolder "it-kroko" -HfRepo "kouhxp/sherpa-onnx-streaming-zipformer-it-kroko"
     Get-PiperVoice -HfPath "it/it_IT/paola/medium" -OnnxName "it_IT-paola-medium"
-    Get-PiperVoice -HfPath "it/it_IT/riccardo/x_low" -OnnxName "it_IT-riccardo-x_low"
-    # Uomo italiano medium (OpenVoiceOS; licenza CC BY-NC-ND — no uso commerciale)
-    Get-PiperVoiceFromRepo -HfRepo "OpenVoiceOS/pipertts_it-IT_miro" -OnnxName "it_IT-miro-medium" `
-        -OnnxRemoteName "miro_it-IT.onnx" -JsonRemoteName "miro_it-IT.onnx.json"
+    # Voci community kirys79 — addestrate su Multilingual LibriSpeech (CC BY 4.0)
+    Get-PiperVoiceFromRepo -HfRepo "kirys79/piper_italiano" -OnnxName "it_IT-leonardo-medium" `
+        -OnnxRemoteName "Leonardo/leonardo-epoch%3D2024-step%3D996300.onnx" `
+        -JsonRemoteName "Leonardo/leonardo-epoch%3D2024-step%3D996300.json"
+    Get-PiperVoiceFromRepo -HfRepo "kirys79/piper_italiano" -OnnxName "it_IT-giorgio-medium" `
+        -OnnxRemoteName "Giorgio/giorgio-epoch%3D5028-step%3D1098436.onnx" `
+        -JsonRemoteName "Giorgio/giorgio-epoch%3D5028-step%3D1098436.json"
 }
 
 if ($Locale -eq "es" -or $Locale -eq "all") {
     Write-Host "=== Espanol (STT + TTS) ==="
     Get-SherpaKroko -LangFolder "es-kroko" -HfRepo "kouhxp/sherpa-onnx-streaming-zipformer-es-kroko"
     Get-PiperVoice -HfPath "es/es_ES/sharvard/medium" -OnnxName "es_ES-sharvard-medium"
+}
+
+if ($Locale -eq "en" -or $Locale -eq "all") {
+    Write-Host "=== English (STT + TTS) ==="
+    Get-SherpaKroko -LangFolder "en-kroko" -HfRepo "kouhxp/sherpa-onnx-streaming-zipformer-en-kroko"
+    Get-PiperVoice -HfPath "en/en_US/ljspeech/high" -OnnxName "en_US-ljspeech-high"
+    Get-PiperVoice -HfPath "en/en_US/ryan/high" -OnnxName "en_US-ryan-high"
 }
 
 Write-Host "Done. Modelli in: $models"

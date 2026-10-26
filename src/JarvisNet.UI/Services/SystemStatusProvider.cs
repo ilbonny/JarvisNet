@@ -11,7 +11,7 @@ namespace JarvisNet.UI.Services;
 public sealed class SystemStatusProvider : IDisposable
 {
     private readonly OllamaOptions _ollama;
-    private readonly JarvisLocaleOptions _locale;
+    private readonly IOptionsMonitor<JarvisLocaleOptions> _locale;
     private readonly object _netLock = new();
     private long _lastNetBytes;
     private DateTime _lastNetUtc = DateTime.UtcNow;
@@ -20,10 +20,10 @@ public sealed class SystemStatusProvider : IDisposable
 
     public SystemStatusProvider(
         IOptions<OllamaOptions> ollama,
-        IOptions<JarvisLocaleOptions> locale)
+        IOptionsMonitor<JarvisLocaleOptions> locale)
     {
         _ollama = ollama.Value;
-        _locale = locale.Value;
+        _locale = locale;
         TryInitCpuCounter();
     }
 
@@ -36,9 +36,9 @@ public sealed class SystemStatusProvider : IDisposable
         var power = SamplePower();
 
         var model = string.IsNullOrWhiteSpace(_ollama.ModelName) ? "—" : _ollama.ModelName.Trim();
-        var language = string.IsNullOrWhiteSpace(_locale.CultureName)
+        var language = string.IsNullOrWhiteSpace(_locale.CurrentValue.CultureName)
             ? "—"
-            : _locale.CultureName.Trim();
+            : _locale.CurrentValue.CultureName.Trim();
 
         return new SystemStatusResponse(
             AiModel: model,

@@ -1,3 +1,5 @@
+using JarvisNet.Audio.Models;
+
 namespace JarvisNet.Audio;
 
 /// <summary>
@@ -6,27 +8,31 @@ namespace JarvisNet.Audio;
 public static class PiperVoiceCatalog
 {
     public const string PaolaMedium = "it_IT-paola-medium";
-    public const string RiccardoXLow = "it_IT-riccardo-x_low";
-    public const string MiroMedium = "it_IT-miro-medium";
+    public const string LeonardoMedium = "it_IT-leonardo-medium";
+    public const string GiorgioMedium = "it_IT-giorgio-medium";
     public const string SerenaMedium = "it_IT-serena-medium";
     public const string EsSharvardMedium = "es_ES-sharvard-medium";
     public const string EsMls10246Low = "es_ES-mls_10246-low";
     public const string EsDavefxMedium = "es_ES-davefx-medium";
     public const string EsCarlfmXLow = "es_ES-carlfm-x_low";
     public const string EsDanielaHigh = "es_AR-daniela-high";
+    public const string EnLjspeechHigh = "en_US-ljspeech-high";
+    public const string EnRyanHigh = "en_US-ryan-high";
 
     private static readonly IReadOnlyDictionary<string, PiperVoiceInfo> Voices =
         new Dictionary<string, PiperVoiceInfo>(StringComparer.OrdinalIgnoreCase)
         {
             [PaolaMedium] = new("tts/it_IT-paola-medium.onnx", "Paola", "medium", "female", "it_IT"),
-            [RiccardoXLow] = new("tts/it_IT-riccardo-x_low.onnx", "Riccardo", "x_low", "male", "it_IT"),
-            [MiroMedium] = new("tts/it_IT-miro-medium.onnx", "Miro", "medium", "male", "it_IT"),
+            [LeonardoMedium] = new("tts/it_IT-leonardo-medium.onnx", "Leonardo", "medium", "male", "it_IT"),
+            [GiorgioMedium] = new("tts/it_IT-giorgio-medium.onnx", "Giorgio", "medium", "male", "it_IT"),
             [SerenaMedium] = new("tts/it_IT-serena-medium.onnx", "Serena", "medium", "female", "it_IT"),
             [EsSharvardMedium] = new("tts/es_ES-sharvard-medium.onnx", "Sharvard", "medium", "female", "es_ES", DefaultSpeakerId: 1),
             [EsMls10246Low] = new("tts/es_ES-mls_10246-low.onnx", "MLS 10246", "low", "female", "es_ES"),
             [EsDavefxMedium] = new("tts/es_ES-davefx-medium.onnx", "Davefx", "medium", "neutral", "es_ES"),
             [EsCarlfmXLow] = new("tts/es_ES-carlfm-x_low.onnx", "Carlfm", "x_low", "male", "es_ES"),
             [EsDanielaHigh] = new("tts/es_AR-daniela-high.onnx", "Daniela", "high", "female", "es_AR"),
+            [EnLjspeechHigh] = new("tts/en_US-ljspeech-high.onnx", "LJSpeech", "high", "female", "en_US"),
+            [EnRyanHigh] = new("tts/en_US-ryan-high.onnx", "Ryan", "high", "male", "en_US"),
         };
 
     public static IReadOnlyDictionary<string, PiperVoiceInfo> AllVoices => Voices;
@@ -55,6 +61,24 @@ public static class PiperVoiceCatalog
         Voices.TryGetValue(voiceKey, out voice!);
 
     public static IEnumerable<string> ListVoiceKeys() => Voices.Keys;
+
+    public static string ResolveVoiceKey(AudioOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(options.PiperVoiceKey))
+        {
+            return options.PiperVoiceKey;
+        }
+
+        foreach (var (key, info) in Voices)
+        {
+            if (string.Equals(info.ModelRelativePath, options.PiperModelPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return key;
+            }
+        }
+
+        return options.GetEffectivePiperModelRelativePath();
+    }
 }
 
 public sealed record PiperVoiceInfo(

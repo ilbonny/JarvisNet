@@ -10,7 +10,7 @@ using PiperSharp.Models;
 
 namespace JarvisNet.Audio.Services;
 
-public sealed class PiperTtsService : ITextToSpeechService
+public sealed class PiperTtsService : ITextToSpeechService, IPiperVoiceService
 {
     public event EventHandler? SpeakingStarted;
 
@@ -18,22 +18,76 @@ public sealed class PiperTtsService : ITextToSpeechService
 
     public event EventHandler<AudioLevelChangedEventArgs>? PlaybackLevelChanged;
 
-    private readonly AudioOptions _options;
+    private readonly IOptionsMonitor<AudioOptions> _optionsMonitor;
     private readonly IAudioInputService _audioInput;
     private readonly ILogger<PiperTtsService> _logger;
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private readonly object _speakGate = new();
     private PiperProvider? _provider;
+    private string? _loadedModelPath;
     private IWavePlayer? _activeWavePlayer;
 
+    private AudioOptions Options => _optionsMonitor.CurrentValue;
+
     public PiperTtsService(
-        IOptions<AudioOptions> options,
+        IOptionsMonitor<AudioOptions> optionsMonitor,
         IAudioInputService audioInput,
         ILogger<PiperTtsService> logger)
     {
-        _options = options.Value;
+        _optionsMonitor = optionsMonitor;
         _audioInput = audioInput;
         _logger = logger;
+    }
+
+    public string GetCurrentVoiceKey() => PiperVoiceCatalog.ResolveVoiceKey(Options);
+
+    public IReadOnlyList<PiperVoiceOption> ListVoices()
+    {
+        var list = new List<PiperVoiceOption>();
+        foreach (var (key, info) in PiperVoiceCatalog.AllVoices)
+        {
+            var resolved = Options.ResolvePath(info.ModelRelativePath);
+            list.Add(new PiperVoiceOption(
+                key,
+                info.SpeakerName,
+                info.Quality,
+                info.Gender,
+                info.Locale,
+                File.Exists(resolved)));
+        }
+
+        return list
+            .OrderBy(v => v.Locale, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(v => v.SpeakerName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public async Task SetVoiceAsync(string voiceKey, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(voiceKey))
+        {
+            throw new ArgumentException("Voice key is required.", nameof(voiceKey));
+        }
+
+        if (!PiperVoiceCatalog.TryGetVoice(voiceKey, out var voice))
+        {
+            throw new ArgumentException($"Unknown Piper voice '{voiceKey}'.", nameof(voiceKey));
+        }
+
+        var modelPath = Options.ResolvePath(voice.ModelRelativePath);
+        if (!File.Exists(modelPath))
+        {
+            throw new ArgumentException(
+                $"Voice model not found at '{modelPath}'. Download the ONNX file first.",
+                nameof(voiceKey));
+        }
+
+        Options.PiperVoiceKey = voiceKey;
+        Options.PiperModelPath = voice.ModelRelativePath;
+        Options.PiperSpeakerId = voice.DefaultSpeakerId > 0 ? voice.DefaultSpeakerId : null;
+
+        await ResetProviderAsync(cancellationToken).ConfigureAwait(false);
+        _logger.LogInformation("Piper voice switched to {VoiceKey} ({ModelPath}).", voiceKey, voice.ModelRelativePath);
     }
 
     public async Task<byte[]> SynthesizePcmAsync(string text, CancellationToken cancellationToken = default)
@@ -58,9 +112,9 @@ public sealed class PiperTtsService : ITextToSpeechService
     public async Task SpeakAsync(string text, CancellationToken cancellationToken = default)
     {
         _audioInput.SetSpeechToTextSuppressed(true);
-        if (_options.EnableBargeIn)
+        if (Options.EnableBargeIn)
         {
-            _audioInput.SetBargeInListening(true, _options.BargeInRmsThreshold);
+            _audioInput.SetBargeInListening(true, Options.BargeInRmsThreshold);
         }
 
         var speakingStarted = false;
@@ -75,9 +129,9 @@ public sealed class PiperTtsService : ITextToSpeechService
             SpeakingStarted?.Invoke(this, EventArgs.Empty);
             speakingStarted = true;
 
-            var sampleRate = _provider?.Configuration.Model.Audio?.SampleRate ?? (uint)_options.PiperSampleRate;
+            var sampleRate = _provider?.Configuration.Model.Audio?.SampleRate ?? (uint)Options.PiperSampleRate;
             var waveFormat = new WaveFormat((int)sampleRate, 16, 1);
-            var wavePlayer = AudioBackendFactory.CreateWavePlayer(_options);
+            var wavePlayer = AudioBackendFactory.CreateWavePlayer(Options);
             lock (_speakGate)
             {
                 _activeWavePlayer = wavePlayer;
@@ -89,8 +143,8 @@ public sealed class PiperTtsService : ITextToSpeechService
                     "Playing TTS ({ByteCount} bytes, {SampleRate} Hz, output device #{Device}, barge-in: {BargeIn}).",
                     pcm.Length,
                     sampleRate,
-                    _options.OutputDeviceNumber,
-                    _options.EnableBargeIn);
+                    Options.OutputDeviceNumber,
+                    Options.EnableBargeIn);
                 var outputPlayer = new NAudioOutputPlayer();
                 await outputPlayer.PlayPcmAsync(
                     wavePlayer,
@@ -129,9 +183,24 @@ public sealed class PiperTtsService : ITextToSpeechService
         }
     }
 
+    private async Task ResetProviderAsync(CancellationToken cancellationToken)
+    {
+        await _initLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            _provider = null;
+            _loadedModelPath = null;
+        }
+        finally
+        {
+            _initLock.Release();
+        }
+    }
+
     private async Task<PiperProvider> GetProviderAsync(CancellationToken cancellationToken)
     {
-        if (_provider is not null)
+        var modelPath = Path.GetFullPath(Options.ResolvePath(Options.GetEffectivePiperModelRelativePath()));
+        if (_provider is not null && string.Equals(_loadedModelPath, modelPath, StringComparison.OrdinalIgnoreCase))
         {
             return _provider;
         }
@@ -139,12 +208,12 @@ public sealed class PiperTtsService : ITextToSpeechService
         await _initLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_provider is not null)
+            if (_provider is not null && string.Equals(_loadedModelPath, modelPath, StringComparison.OrdinalIgnoreCase))
             {
                 return _provider;
             }
 
-            var executablePath = AudioPathHelper.ResolvePiperExecutablePath(_options);
+            var executablePath = AudioPathHelper.ResolvePiperExecutablePath(Options);
             if (!File.Exists(executablePath))
             {
                 throw new FileNotFoundException(
@@ -152,15 +221,18 @@ public sealed class PiperTtsService : ITextToSpeechService
                     executablePath);
             }
 
-            var modelPath = Path.GetFullPath(_options.ResolvePath(_options.GetEffectivePiperModelRelativePath()));
+            if (!File.Exists(modelPath))
+            {
+                throw new FileNotFoundException($"Piper voice model not found at '{modelPath}'.", modelPath);
+            }
 
-            var workingDirectory = string.IsNullOrWhiteSpace(_options.PiperWorkingDirectory)
+            var workingDirectory = string.IsNullOrWhiteSpace(Options.PiperWorkingDirectory)
                 ? RepositoryPaths.GetPiperDirectory(RepositoryPaths.FindRepositoryRoot(AppContext.BaseDirectory))
-                : Path.GetFullPath(_options.PiperWorkingDirectory);
+                : Path.GetFullPath(Options.PiperWorkingDirectory);
 
             var model = await PiperVoiceModelLoader.LoadFromOnnxPathAsync(modelPath, cancellationToken)
                 .ConfigureAwait(false);
-            var speakerId = _options.ResolvePiperSpeakerId();
+            var speakerId = Options.ResolvePiperSpeakerId();
             _provider = new PiperProvider(new PiperConfiguration
             {
                 ExecutableLocation = executablePath,
@@ -168,6 +240,7 @@ public sealed class PiperTtsService : ITextToSpeechService
                 Model = model,
                 SpeakerId = speakerId,
             });
+            _loadedModelPath = modelPath;
 
             _logger.LogInformation("Piper TTS initialized with model {ModelPath}.", modelPath);
             return _provider;

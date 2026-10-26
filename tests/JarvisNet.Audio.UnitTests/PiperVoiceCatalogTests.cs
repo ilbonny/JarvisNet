@@ -7,12 +7,12 @@ namespace JarvisNet.Audio.UnitTests;
 public sealed class PiperVoiceCatalogTests
 {
     [Test]
-    public void TryGetModelRelativePath_Riccardo_ReturnsMaleVoicePath()
+    public void TryGetModelRelativePath_Leonardo_ReturnsMaleVoicePath()
     {
         Assert.That(
-            PiperVoiceCatalog.TryGetModelRelativePath(PiperVoiceCatalog.RiccardoXLow, out var path),
+            PiperVoiceCatalog.TryGetModelRelativePath(PiperVoiceCatalog.LeonardoMedium, out var path),
             Is.True);
-        Assert.That(path, Is.EqualTo("tts/it_IT-riccardo-x_low.onnx"));
+        Assert.That(path, Is.EqualTo("tts/it_IT-leonardo-medium.onnx"));
     }
 
     [Test]
@@ -20,12 +20,12 @@ public sealed class PiperVoiceCatalogTests
     {
         var options = new AudioOptions
         {
-            PiperVoiceKey = PiperVoiceCatalog.RiccardoXLow,
+            PiperVoiceKey = PiperVoiceCatalog.LeonardoMedium,
             PiperModelPath = "tts/it_IT-paola-medium.onnx",
         };
 
         Assert.That(
             options.GetEffectivePiperModelRelativePath(),
-            Is.EqualTo("tts/it_IT-riccardo-x_low.onnx"));
+            Is.EqualTo("tts/it_IT-leonardo-medium.onnx"));
     }
 }

@@ -42,8 +42,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IValidateOptions<AudioOptions>, AudioOptionsValidator>();
 
         services.AddSingleton<IAudioInputService, NAudioInputService>();
-        services.AddSingleton<ISpeechToTextService, SherpaOnnxSttService>();
-        services.AddSingleton<ITextToSpeechService, PiperTtsService>();
+        services.AddSingleton<SherpaOnnxSttService>();
+        services.AddSingleton<ISpeechToTextService>(sp => sp.GetRequiredService<SherpaOnnxSttService>());
+        services.AddSingleton<ISpeechToTextRuntime>(sp => sp.GetRequiredService<SherpaOnnxSttService>());
+        services.AddSingleton<PiperTtsService>();
+        services.AddSingleton<ITextToSpeechService>(sp => sp.GetRequiredService<PiperTtsService>());
+        services.AddSingleton<IPiperVoiceService>(sp => sp.GetRequiredService<PiperTtsService>());
 
         return services;
     }

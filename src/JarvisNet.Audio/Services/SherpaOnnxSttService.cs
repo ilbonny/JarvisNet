@@ -8,19 +8,21 @@ using SherpaOnnx;
 
 namespace JarvisNet.Audio.Services;
 
-public sealed class SherpaOnnxSttService : ISpeechToTextService
+public sealed class SherpaOnnxSttService : ISpeechToTextService, ISpeechToTextRuntime
 {
     private readonly ILogger<SherpaOnnxSttService> _logger;
-    private readonly AudioOptions _options;
+    private readonly IOptionsMonitor<AudioOptions> _optionsMonitor;
     private readonly object _sync = new();
     private OnlineRecognizer? _recognizer;
     private OnlineStream? _stream;
     private string _lastPartialText = string.Empty;
     private bool _sessionActive;
 
-    public SherpaOnnxSttService(IOptions<AudioOptions> options, ILogger<SherpaOnnxSttService> logger)
+    private AudioOptions Options => _optionsMonitor.CurrentValue;
+
+    public SherpaOnnxSttService(IOptionsMonitor<AudioOptions> optionsMonitor, ILogger<SherpaOnnxSttService> logger)
     {
-        _options = options.Value;
+        _optionsMonitor = optionsMonitor;
         _logger = logger;
     }
 
@@ -53,16 +55,28 @@ public sealed class SherpaOnnxSttService : ISpeechToTextService
 
         lock (_sync)
         {
-            _stream?.Dispose();
-            _stream = null;
-            _recognizer?.Dispose();
-            _recognizer = null;
+            DisposeRecognizer();
             _sessionActive = false;
             _lastPartialText = string.Empty;
             _logger.LogInformation("Sherpa STT session stopped.");
         }
 
         return Task.CompletedTask;
+    }
+
+    public async Task ReloadAfterProfileChangeAsync(CancellationToken cancellationToken = default)
+    {
+        var wasActive = false;
+        lock (_sync)
+        {
+            wasActive = _sessionActive;
+        }
+
+        if (wasActive)
+        {
+            await StopSessionAsync(cancellationToken).ConfigureAwait(false);
+            await StartSessionAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public void ProcessAudio(ReadOnlyMemory<float> samples, int sampleRate)
@@ -123,23 +137,23 @@ public sealed class SherpaOnnxSttService : ISpeechToTextService
         {
             FeatConfig =
             {
-                SampleRate = _options.SampleRate,
+                SampleRate = Options.SampleRate,
                 FeatureDim = 80,
             },
             ModelConfig =
             {
                 Transducer =
                 {
-                    Encoder = _options.ResolvePath(_options.SherpaEncoderPath),
-                    Decoder = _options.ResolvePath(_options.SherpaDecoderPath),
-                    Joiner = _options.ResolvePath(_options.SherpaJoinerPath),
+                    Encoder = Options.ResolvePath(Options.SherpaEncoderPath),
+                    Decoder = Options.ResolvePath(Options.SherpaDecoderPath),
+                    Joiner = Options.ResolvePath(Options.SherpaJoinerPath),
                 },
-                Tokens = _options.ResolvePath(_options.SherpaTokensPath),
-                NumThreads = _options.SherpaNumThreads,
-                Provider = _options.SherpaProvider,
-                ModelType = string.IsNullOrWhiteSpace(_options.SherpaModelType)
+                Tokens = Options.ResolvePath(Options.SherpaTokensPath),
+                NumThreads = Options.SherpaNumThreads,
+                Provider = Options.SherpaProvider,
+                ModelType = string.IsNullOrWhiteSpace(Options.SherpaModelType)
                     ? "zipformer2"
-                    : _options.SherpaModelType,
+                    : Options.SherpaModelType,
             },
             DecodingMethod = "greedy_search",
             EnableEndpoint = 1,
@@ -149,6 +163,14 @@ public sealed class SherpaOnnxSttService : ISpeechToTextService
         };
 
         return new OnlineRecognizer(config);
+    }
+
+    private void DisposeRecognizer()
+    {
+        _stream?.Dispose();
+        _stream = null;
+        _recognizer?.Dispose();
+        _recognizer = null;
     }
 
     private void RaiseSpeechRecognized(string text, bool isFinal)

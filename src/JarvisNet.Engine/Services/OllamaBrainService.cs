@@ -1,5 +1,7 @@
 using JarvisNet.Engine.Options;
 using JarvisNet.Plugins.Sdk.Abstractions;
+using JarvisNet.Plugins.Sdk.Infrastructure;
+using JarvisNet.Plugins.Sdk.Options;
 using JarvisNet.Plugins.Sdk.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,7 +15,8 @@ public sealed class OllamaBrainService
 {
     private readonly IChatCompletionService _chatCompletion;
     private readonly Kernel _kernel;
-    private readonly OllamaOptions _options;
+    private readonly IOptionsMonitor<OllamaOptions> _optionsMonitor;
+    private readonly IOptionsMonitor<JarvisLocaleOptions> _localeMonitor;
     private readonly ILogger<OllamaBrainService> _logger;
     private readonly IJarvisTurnScope _turnScope;
     private readonly IReadOnlyList<IJarvisPluginTurnHandler> _pluginTurnHandlers;
@@ -23,18 +26,20 @@ public sealed class OllamaBrainService
     public OllamaBrainService(
         IChatCompletionService chatCompletion,
         Kernel kernel,
-        IOptions<OllamaOptions> options,
+        IOptionsMonitor<OllamaOptions> options,
+        IOptionsMonitor<JarvisLocaleOptions> locale,
         IJarvisTurnScope turnScope,
         ILogger<OllamaBrainService> logger,
         IEnumerable<IJarvisPluginTurnHandler>? pluginTurnHandlers = null)
     {
         _chatCompletion = chatCompletion;
         _kernel = kernel;
-        _options = options.Value;
+        _optionsMonitor = options;
+        _localeMonitor = locale;
         _turnScope = turnScope;
         _logger = logger;
         _pluginTurnHandlers = pluginTurnHandlers?.ToList() ?? [];
-        _history = CreateInitialHistory(_options.SystemPrompt);
+        _history = CreateInitialHistory(BuildSystemPrompt());
     }
 
     internal OllamaBrainService(
@@ -47,7 +52,8 @@ public sealed class OllamaBrainService
         : this(
             chatCompletion,
             kernel,
-            Microsoft.Extensions.Options.Options.Create(options),
+            new TestOptionsMonitor<OllamaOptions>(options),
+            new TestOptionsMonitor<JarvisLocaleOptions>(new JarvisLocaleOptions()),
             turnScope ?? NullJarvisTurnScope.Instance,
             logger,
             pluginTurnHandlers)
@@ -68,7 +74,7 @@ public sealed class OllamaBrainService
             historySnapshot = CloneHistory(_history);
         }
 
-        _logger.LogDebug("Invio messaggio utente a Ollama ({Model}).", _options.ModelName);
+        _logger.LogDebug("Invio messaggio utente a Ollama ({Model}).", _optionsMonitor.CurrentValue.ModelName);
 
         var assistantText = await CompleteAssistantTurnAsync(
                 userMessage.Trim(),
@@ -106,7 +112,7 @@ public sealed class OllamaBrainService
 
         _logger.LogDebug(
             "Invio messaggio utente (voce) a Ollama ({Model}) con auto-invoke tool (non streaming SK/Ollama).",
-            _options.ModelName);
+            _optionsMonitor.CurrentValue.ModelName);
 
         var assistantText = await CompleteAssistantTurnAsync(
                 userMessage.Trim(),
@@ -135,7 +141,7 @@ public sealed class OllamaBrainService
         lock (_historyLock)
         {
             _history.Clear();
-            _history.AddSystemMessage(_options.SystemPrompt);
+            _history.AddSystemMessage(BuildSystemPrompt());
         }
     }
 
@@ -177,7 +183,7 @@ public sealed class OllamaBrainService
             Kernel = _kernel,
             ChatCompletion = _chatCompletion,
             ExecutionSettings = executionSettings,
-            Temperature = _options.Temperature,
+            Temperature = _optionsMonitor.CurrentValue.Temperature,
             Logger = _logger,
             InvokeAssistantAsync = (history, ct) => InvokeAssistantAsync(history, executionSettings, ct),
         };
@@ -204,9 +210,23 @@ public sealed class OllamaBrainService
     private OpenAIPromptExecutionSettings CreateExecutionSettings() =>
         new()
         {
-            Temperature = _options.Temperature,
+            Temperature = _optionsMonitor.CurrentValue.Temperature,
             FunctionChoiceBehavior = FunctionChoiceBehavior.Auto(),
         };
+
+    private string BuildSystemPrompt() =>
+        JarvisSystemPromptComposer.Compose(
+            _optionsMonitor.CurrentValue.SystemPrompt,
+            _localeMonitor.CurrentValue.CultureName);
+
+    private sealed class TestOptionsMonitor<T>(T value) : IOptionsMonitor<T>
+    {
+        public T CurrentValue { get; } = value;
+
+        public T Get(string? name) => CurrentValue;
+
+        public IDisposable? OnChange(Action<T, string?> listener) => null;
+    }
 
     private sealed class NullJarvisTurnScope : IJarvisTurnScope
     {
