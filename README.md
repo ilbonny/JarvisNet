@@ -115,6 +115,7 @@ Voce TTS (`JarvisNet:Audio:PiperVoiceKey`):
 | Chiave | Lingua | Voce |
 |--------|--------|------|
 | `it_IT-paola-medium` | IT | donna (default) |
+| `it_IT-serena-high` | IT | donna, alta qualità |
 | `it_IT-leonardo-medium` | IT | uomo (kirys79) |
 | `it_IT-giorgio-medium` | IT | uomo (kirys79) |
 | `es_ES-sharvard-medium` | ES (Spagna) | donna (speaker 1, consigliata) |

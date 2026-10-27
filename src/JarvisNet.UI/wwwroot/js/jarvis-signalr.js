@@ -134,6 +134,11 @@
   connection.on("StateChanged", (state) => {
     window.mcpActiveTool = null;
     window.jarvisState = state;
+    if (state === "Idle") {
+      setMicSession(false);
+    } else if (state === "Listening") {
+      setMicSession(true);
+    }
     updateMicLabel(state);
   });
 

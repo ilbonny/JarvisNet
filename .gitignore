@@ -76,6 +76,7 @@ secrets.json
 *.Development.local.json
 config/jarvisnet.mcp.secrets.json
 config/jarvisnet.mcp.secrets.env
+config/jarvisnet.telegram.secrets.json
 ## OS
 .DS_Store
 Thumbs.db

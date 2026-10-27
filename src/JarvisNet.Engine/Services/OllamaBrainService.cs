@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using JarvisNet.Core;
 using JarvisNet.Engine.Options;
 using JarvisNet.Plugins.Sdk.Abstractions;
 using JarvisNet.Plugins.Sdk.Infrastructure;
@@ -20,8 +22,9 @@ public sealed class OllamaBrainService
     private readonly ILogger<OllamaBrainService> _logger;
     private readonly IJarvisTurnScope _turnScope;
     private readonly IReadOnlyList<IJarvisPluginTurnHandler> _pluginTurnHandlers;
-    private readonly ChatHistory _history;
+    private readonly ConcurrentDictionary<string, ChatHistory> _histories = new(StringComparer.Ordinal);
     private readonly object _historyLock = new();
+    private readonly SemaphoreSlim _completionLock = new(1, 1);
 
     public OllamaBrainService(
         IChatCompletionService chatCompletion,
@@ -39,7 +42,7 @@ public sealed class OllamaBrainService
         _turnScope = turnScope;
         _logger = logger;
         _pluginTurnHandlers = pluginTurnHandlers?.ToList() ?? [];
-        _history = CreateInitialHistory(BuildSystemPrompt());
+        _ = GetOrCreateHistory(JarvisChatSessionKeys.Voice);
     }
 
     internal OllamaBrainService(
@@ -60,41 +63,66 @@ public sealed class OllamaBrainService
     {
     }
 
-    public async Task<string> SendAsync(string userMessage, CancellationToken cancellationToken = default)
+    public Task<string> SendAsync(
+        string userMessage,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(userMessage, JarvisChatSessionKeys.Voice, cancellationToken);
+
+    public async Task<string> SendAsync(
+        string userMessage,
+        string sessionKey,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(userMessage))
         {
             return string.Empty;
         }
 
+        var trimmed = userMessage.Trim();
         ChatHistory historySnapshot;
         lock (_historyLock)
         {
-            _history.AddUserMessage(userMessage.Trim());
-            historySnapshot = CloneHistory(_history);
+            var history = GetOrCreateHistory(sessionKey);
+            history.AddUserMessage(trimmed);
+            historySnapshot = CloneHistory(history);
         }
 
-        _logger.LogDebug("Invio messaggio utente a Ollama ({Model}).", _optionsMonitor.CurrentValue.ModelName);
+        _logger.LogDebug(
+            "Invio messaggio utente a Ollama ({Model}), sessione {SessionKey}.",
+            _optionsMonitor.CurrentValue.ModelName,
+            sessionKey);
 
-        var assistantText = await CompleteAssistantTurnAsync(
-                userMessage.Trim(),
-                historySnapshot,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        lock (_historyLock)
+        await _completionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            if (!string.IsNullOrEmpty(assistantText))
-            {
-                _history.AddAssistantMessage(assistantText);
-            }
-        }
+            var assistantText = await CompleteAssistantTurnAsync(trimmed, historySnapshot, cancellationToken)
+                .ConfigureAwait(false);
 
-        return assistantText;
+            lock (_historyLock)
+            {
+                if (!string.IsNullOrEmpty(assistantText))
+                {
+                    GetOrCreateHistory(sessionKey).AddAssistantMessage(assistantText);
+                }
+            }
+
+            return assistantText;
+        }
+        finally
+        {
+            _completionLock.Release();
+        }
     }
+
+    public Task<string> SendStreamingAsync(
+        string userMessage,
+        Action<string> onChunk,
+        CancellationToken cancellationToken = default) =>
+        SendStreamingAsync(userMessage, JarvisChatSessionKeys.Voice, onChunk, cancellationToken);
 
     public async Task<string> SendStreamingAsync(
         string userMessage,
+        string sessionKey,
         Action<string> onChunk,
         CancellationToken cancellationToken = default)
     {
@@ -103,57 +131,72 @@ public sealed class OllamaBrainService
             return string.Empty;
         }
 
+        var trimmed = userMessage.Trim();
         ChatHistory historySnapshot;
         lock (_historyLock)
         {
-            _history.AddUserMessage(userMessage.Trim());
-            historySnapshot = CloneHistory(_history);
+            var history = GetOrCreateHistory(sessionKey);
+            history.AddUserMessage(trimmed);
+            historySnapshot = CloneHistory(history);
         }
 
         _logger.LogDebug(
-            "Invio messaggio utente (voce) a Ollama ({Model}) con auto-invoke tool (non streaming SK/Ollama).",
-            _optionsMonitor.CurrentValue.ModelName);
+            "Invio messaggio utente (voce) a Ollama ({Model}) con auto-invoke tool, sessione {SessionKey}.",
+            _optionsMonitor.CurrentValue.ModelName,
+            sessionKey);
 
-        var assistantText = await CompleteAssistantTurnAsync(
-                userMessage.Trim(),
-                historySnapshot,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        foreach (var chunk in ChunkTextForUi(assistantText))
+        await _completionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            onChunk(chunk);
-        }
+            var assistantText = await CompleteAssistantTurnAsync(trimmed, historySnapshot, cancellationToken)
+                .ConfigureAwait(false);
 
-        lock (_historyLock)
-        {
-            if (!string.IsNullOrEmpty(assistantText))
+            foreach (var chunk in ChunkTextForUi(assistantText))
             {
-                _history.AddAssistantMessage(assistantText);
+                onChunk(chunk);
             }
-        }
 
-        return assistantText;
+            lock (_historyLock)
+            {
+                if (!string.IsNullOrEmpty(assistantText))
+                {
+                    GetOrCreateHistory(sessionKey).AddAssistantMessage(assistantText);
+                }
+            }
+
+            return assistantText;
+        }
+        finally
+        {
+            _completionLock.Release();
+        }
     }
 
-    public void ClearHistory()
+    public void ClearHistory() => ClearHistory(JarvisChatSessionKeys.Voice);
+
+    public void ClearHistory(string sessionKey)
     {
         lock (_historyLock)
         {
-            _history.Clear();
-            _history.AddSystemMessage(BuildSystemPrompt());
+            _histories[sessionKey] = CreateInitialHistory(BuildSystemPrompt());
         }
     }
 
-    public IReadOnlyList<ChatMessageContent> GetHistorySnapshot()
+    public IReadOnlyList<ChatMessageContent> GetHistorySnapshot() =>
+        GetHistorySnapshot(JarvisChatSessionKeys.Voice);
+
+    public IReadOnlyList<ChatMessageContent> GetHistorySnapshot(string sessionKey)
     {
         lock (_historyLock)
         {
-            return _history
+            return GetOrCreateHistory(sessionKey)
                 .Select(message => new ChatMessageContent(message.Role, message.Content ?? string.Empty))
                 .ToList();
         }
     }
+
+    private ChatHistory GetOrCreateHistory(string sessionKey) =>
+        _histories.GetOrAdd(sessionKey, _ => CreateInitialHistory(BuildSystemPrompt()));
 
     private async Task<string> CompleteAssistantTurnAsync(
         string userMessage,

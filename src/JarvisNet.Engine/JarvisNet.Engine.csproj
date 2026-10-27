@@ -42,6 +42,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="JarvisNet.Engine.UnitTests" />
+    <InternalsVisibleTo Include="JarvisNet.Telegram" />
   </ItemGroup>
 
 </Project>

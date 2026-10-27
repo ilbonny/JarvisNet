@@ -3,6 +3,7 @@ using JarvisNet.Audio.DependencyInjection;
 using JarvisNet.Engine.Abstractions;
 using JarvisNet.Engine.DependencyInjection;
 using JarvisNet.Engine.Services;
+using JarvisNet.Telegram.DependencyInjection;
 using JarvisNet.UI.Hubs;
 using JarvisNet.UI.Models;
 using JarvisNet.UI.Services;
@@ -16,10 +17,12 @@ if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
     .AddJarvisNetSharedAudioConfiguration(builder.Environment.ContentRootPath)
-    .AddJarvisNetSharedEngineConfiguration(builder.Environment.ContentRootPath);
+    .AddJarvisNetSharedEngineConfiguration(builder.Environment.ContentRootPath)
+    .AddJarvisNetSharedTelegramConfiguration(builder.Environment.ContentRootPath);
 
 builder.Services.AddJarvisNetAudio(builder.Configuration);
 builder.Services.AddJarvisNetEngine(builder.Configuration);
+builder.Services.AddJarvisNetTelegram(builder.Configuration);
 builder.Services.AddSignalR();
 builder.Services.AddHostedService<JarvisUiEventBridge>();
 builder.Services.AddSingleton<SystemStatusProvider>();

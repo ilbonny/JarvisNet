@@ -12,7 +12,6 @@ public sealed class AudioLanguageService : IAudioLanguageService
     private readonly IOptionsMonitor<AudioOptions> _audioOptions;
     private readonly IOptionsMonitor<JarvisLocaleOptions> _localeOptions;
     private readonly IPiperVoiceService _voices;
-    private readonly ISpeechToTextRuntime _speechToTextRuntime;
     private readonly IJarvisNetEngine _engine;
     private readonly ILogger<AudioLanguageService> _logger;
 
@@ -20,14 +19,12 @@ public sealed class AudioLanguageService : IAudioLanguageService
         IOptionsMonitor<AudioOptions> audioOptions,
         IOptionsMonitor<JarvisLocaleOptions> localeOptions,
         IPiperVoiceService voices,
-        ISpeechToTextRuntime speechToTextRuntime,
         IJarvisNetEngine engine,
         ILogger<AudioLanguageService> logger)
     {
         _audioOptions = audioOptions;
         _localeOptions = localeOptions;
         _voices = voices;
-        _speechToTextRuntime = speechToTextRuntime;
         _engine = engine;
         _logger = logger;
     }
@@ -69,10 +66,14 @@ public sealed class AudioLanguageService : IAudioLanguageService
                 nameof(languageId));
         }
 
+        var restartVoiceSession = _engine.IsVoiceSessionActive;
+        if (restartVoiceSession)
+        {
+            await _engine.StopVoiceSessionAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         AudioLanguageCatalog.ApplyToOptions(profile, Audio);
         _localeOptions.CurrentValue.CultureName = profile.CultureName;
-
-        await _speechToTextRuntime.ReloadAfterProfileChangeAsync(cancellationToken).ConfigureAwait(false);
 
         var currentVoiceKey = _voices.GetCurrentVoiceKey();
         var voiceMatchesLanguage = PiperVoiceCatalog.TryGetVoice(currentVoiceKey, out var voiceInfo) &&
@@ -93,9 +94,15 @@ public sealed class AudioLanguageService : IAudioLanguageService
 
         _engine.ClearHistory();
 
+        if (restartVoiceSession)
+        {
+            await _engine.StartVoiceSessionAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         _logger.LogInformation(
-            "Audio language set to {LanguageId} ({Culture}); conversation reset for new locale.",
+            "Audio language set to {LanguageId} ({Culture}); conversation reset{RestartNote}.",
             profile.Id,
-            profile.CultureName);
+            profile.CultureName,
+            restartVoiceSession ? " with voice session restarted" : string.Empty);
     }
 }

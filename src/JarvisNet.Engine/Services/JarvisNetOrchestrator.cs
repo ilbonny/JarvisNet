@@ -57,6 +57,8 @@ public sealed class JarvisNetOrchestrator
 
     public event EventHandler? ExitRequested;
 
+    public bool IsVoiceSessionActive => _sessionActive;
+
     public Task StartVoiceSessionAsync(CancellationToken cancellationToken = default)
     {
         if (_sessionTask is { IsCompleted: false })

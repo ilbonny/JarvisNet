@@ -1,0 +1,9 @@
+{
+  "JarvisNet": {
+    "Telegram": {
+      "Enabled": false,
+      "BotToken": "",
+      "AllowedChatIds": []
+    }
+  }
+}

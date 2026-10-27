@@ -55,6 +55,7 @@ if ($Locale -eq "it" -or $Locale -eq "all") {
     Write-Host "=== Italiano (STT + TTS) ==="
     Get-SherpaKroko -LangFolder "it-kroko" -HfRepo "kouhxp/sherpa-onnx-streaming-zipformer-it-kroko"
     Get-PiperVoice -HfPath "it/it_IT/paola/medium" -OnnxName "it_IT-paola-medium"
+    Get-PiperVoice -HfPath "it/it_IT/serena/high" -OnnxName "it_IT-serena-high"
     # Voci community kirys79 — addestrate su Multilingual LibriSpeech (CC BY 4.0)
     Get-PiperVoiceFromRepo -HfRepo "kirys79/piper_italiano" -OnnxName "it_IT-leonardo-medium" `
         -OnnxRemoteName "Leonardo/leonardo-epoch%3D2024-step%3D996300.onnx" `

@@ -28,6 +28,8 @@ public interface IJarvisNetEngine
 
     IReadOnlyList<ChatMessageContent> GetHistorySnapshot();
 
+    bool IsVoiceSessionActive { get; }
+
     Task StartVoiceSessionAsync(CancellationToken cancellationToken = default);
 
     Task StopVoiceSessionAsync(CancellationToken cancellationToken = default);

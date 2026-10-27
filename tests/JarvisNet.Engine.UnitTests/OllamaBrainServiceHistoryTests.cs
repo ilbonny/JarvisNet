@@ -1,3 +1,4 @@
+using JarvisNet.Core;
 using JarvisNet.Engine.Options;
 using JarvisNet.Engine.Services;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -58,5 +59,31 @@ public sealed class OllamaBrainServiceHistoryTests
         Assert.That(snapshot.Count, Is.EqualTo(1));
         Assert.That(snapshot[0].Role, Is.EqualTo(AuthorRole.System));
         Assert.That(snapshot[0].Content, Is.EqualTo("system-test"));
+    }
+
+    [Test]
+    public async Task SendAsync_KeepsSeparateHistoryPerSessionKey()
+    {
+        var chatCompletion = new FakeChatCompletionService(history =>
+            new ChatMessageContent(AuthorRole.Assistant, $"Echo: {history.Last().Content}"));
+
+        var options = new OllamaOptions { SystemPrompt = "system-test" };
+        var kernel = Kernel.CreateBuilder().Build();
+        var service = new OllamaBrainService(
+            chatCompletion,
+            kernel,
+            options,
+            NullLogger<OllamaBrainService>.Instance);
+
+        await service.SendAsync("Voce", JarvisChatSessionKeys.Voice).ConfigureAwait(false);
+        await service.SendAsync("Telegram", JarvisChatSessionKeys.TelegramChat(42)).ConfigureAwait(false);
+
+        var voiceHistory = service.GetHistorySnapshot(JarvisChatSessionKeys.Voice);
+        var telegramHistory = service.GetHistorySnapshot(JarvisChatSessionKeys.TelegramChat(42));
+
+        Assert.That(voiceHistory.Any(m => m.Content == "Voce"), Is.True);
+        Assert.That(voiceHistory.Any(m => m.Content == "Telegram"), Is.False);
+        Assert.That(telegramHistory.Any(m => m.Content == "Telegram"), Is.True);
+        Assert.That(telegramHistory.Any(m => m.Content == "Voce"), Is.False);
     }
 }

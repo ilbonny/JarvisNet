@@ -49,6 +49,8 @@ public sealed class JarvisNetEngine : IJarvisNetEngine
 
     public event EventHandler<ModuleToolEventArgs>? ModuleToolExecutionCompleted;
 
+    public bool IsVoiceSessionActive => _orchestrator.IsVoiceSessionActive;
+
     public Task<string> SendAsync(string userMessage, CancellationToken cancellationToken = default) =>
         _brain.SendAsync(userMessage, cancellationToken);
 

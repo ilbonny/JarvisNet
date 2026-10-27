@@ -45,6 +45,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<SherpaOnnxSttService>();
         services.AddSingleton<ISpeechToTextService>(sp => sp.GetRequiredService<SherpaOnnxSttService>());
         services.AddSingleton<ISpeechToTextRuntime>(sp => sp.GetRequiredService<SherpaOnnxSttService>());
+        services.AddSingleton<ISpeechToTextBatchTranscriber, SherpaOnnxBatchTranscriber>();
         services.AddSingleton<PiperTtsService>();
         services.AddSingleton<ITextToSpeechService>(sp => sp.GetRequiredService<PiperTtsService>());
         services.AddSingleton<IPiperVoiceService>(sp => sp.GetRequiredService<PiperTtsService>());

@@ -14,6 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\JarvisNet.Audio\JarvisNet.Audio.csproj" />
     <ProjectReference Include="..\JarvisNet.Engine\JarvisNet.Engine.csproj" />
+    <ProjectReference Include="..\JarvisNet.Telegram\JarvisNet.Telegram.csproj" />
   </ItemGroup>
 
   <Target Name="CopyJarvisSearchWebPlugin" AfterTargets="Build">

@@ -11,6 +11,7 @@ public static class PiperVoiceCatalog
     public const string LeonardoMedium = "it_IT-leonardo-medium";
     public const string GiorgioMedium = "it_IT-giorgio-medium";
     public const string SerenaMedium = "it_IT-serena-medium";
+    public const string SerenaHigh = "it_IT-serena-high";
     public const string EsSharvardMedium = "es_ES-sharvard-medium";
     public const string EsMls10246Low = "es_ES-mls_10246-low";
     public const string EsDavefxMedium = "es_ES-davefx-medium";
@@ -26,6 +27,7 @@ public static class PiperVoiceCatalog
             [LeonardoMedium] = new("tts/it_IT-leonardo-medium.onnx", "Leonardo", "medium", "male", "it_IT"),
             [GiorgioMedium] = new("tts/it_IT-giorgio-medium.onnx", "Giorgio", "medium", "male", "it_IT"),
             [SerenaMedium] = new("tts/it_IT-serena-medium.onnx", "Serena", "medium", "female", "it_IT"),
+            [SerenaHigh] = new("tts/it_IT-serena-high.onnx", "Serena", "high", "female", "it_IT"),
             [EsSharvardMedium] = new("tts/es_ES-sharvard-medium.onnx", "Sharvard", "medium", "female", "es_ES", DefaultSpeakerId: 1),
             [EsMls10246Low] = new("tts/es_ES-mls_10246-low.onnx", "MLS 10246", "low", "female", "es_ES"),
             [EsDavefxMedium] = new("tts/es_ES-davefx-medium.onnx", "Davefx", "medium", "neutral", "es_ES"),
