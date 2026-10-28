@@ -126,28 +126,54 @@
   </header>
 
   <main class="layout">
-    <aside class="voice-settings-panel" aria-label="Voce e lingua">
-      <header class="voice-panel-header">
-        <span class="voice-panel-title">VOICE &amp; LANGUAGE</span>
-        <span class="voice-panel-status" id="voice-panel-status">Loading</span>
-      </header>
-      <div class="voice-panel-wave" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    <aside class="settings-sidebar" aria-label="Impostazioni">
+      <div class="voice-settings-panel settings-panel" aria-label="Voce e lingua">
+        <header class="voice-panel-header settings-panel-trigger" role="button" tabindex="0" aria-expanded="true" aria-controls="voice-panel-body">
+          <span class="settings-panel-chevron" aria-hidden="true"></span>
+          <span class="voice-panel-title">VOICE &amp; LANGUAGE</span>
+          <span class="voice-panel-status" id="voice-panel-status">Loading</span>
+        </header>
+        <div id="voice-panel-body" class="settings-panel-body">
+          <div class="voice-panel-wave" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="voice-panel-fields">
+            <label class="voice-panel-row">
+              <span class="voice-panel-label">Language</span>
+              <select id="audio-language-select" class="voice-panel-select" aria-label="Lingua">
+                <option value="">—</option>
+              </select>
+            </label>
+            <label class="voice-panel-row">
+              <span class="voice-panel-label">Voice</span>
+              <select id="audio-voice-select" class="voice-panel-select" aria-label="Voce TTS">
+                <option value="">—</option>
+              </select>
+            </label>
+          </div>
+        </div>
       </div>
-      <div class="voice-panel-fields">
-        <label class="voice-panel-row">
-          <span class="voice-panel-label">Language</span>
-          <select id="audio-language-select" class="voice-panel-select" aria-label="Lingua">
-            <option value="">—</option>
-          </select>
-        </label>
-        <label class="voice-panel-row">
-          <span class="voice-panel-label">Voice</span>
-          <select id="audio-voice-select" class="voice-panel-select" aria-label="Voce TTS">
-            <option value="">—</option>
-          </select>
-        </label>
-      </div>
+
+      <section class="schedule-panel settings-panel" aria-label="Prompt schedulati">
+        <header class="voice-panel-header schedule-panel-header settings-panel-trigger" role="button" tabindex="0" aria-expanded="true" aria-controls="schedule-panel-body">
+          <span class="settings-panel-chevron" aria-hidden="true"></span>
+          <span class="voice-panel-title">SCHEDULED PROMPTS</span>
+          <span class="voice-panel-status" id="schedule-panel-status">Loading</span>
+        </header>
+        <div id="schedule-panel-body" class="settings-panel-body">
+          <div class="schedule-panel-toolbar">
+            <label class="schedule-master-toggle">
+              <input type="checkbox" id="schedules-enabled" />
+              <span>Attivi</span>
+            </label>
+            <button type="button" id="btn-schedule-add" class="schedule-btn schedule-btn-add">+ Nuovo</button>
+          </div>
+          <div id="schedule-list" class="schedule-list" role="list"></div>
+          <footer class="schedule-panel-footer">
+            <button type="button" id="btn-schedules-save" class="schedule-btn schedule-btn-save" disabled>Salva</button>
+          </footer>
+        </div>
+      </section>
     </aside>
     <div class="left-stage">
       <svg class="brain-bg" viewBox="0 0 640 640" aria-hidden="true" focusable="false">
@@ -206,7 +232,9 @@
   </main>
 
   <script src="js/jarvis-system-status.js"></script>
+  <script src="js/jarvis-settings-panels.js"></script>
   <script src="js/jarvis-voice-panel.js"></script>
+  <script src="js/jarvis-schedule-panel.js"></script>
   <script src="js/jarvis-clock.js"></script>
   <script src="js/jarvis-module-orbit.js"></script>
   <script src="js/jarvis-hud.js"></script>

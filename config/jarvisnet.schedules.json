@@ -1,0 +1,41 @@
+{
+  "JarvisNet": {
+    "Schedules": {
+      "Enabled": true,
+      "Items": [
+        {
+          "Id": "morning-email-check",
+          "Name": "Controllo email mattutino",
+          "Enabled": true,
+          "Time": "08:00",
+          "DaysOfWeek": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday"
+          ],
+          "RunOnStartup": true,
+          "SpeakResponse": true,
+          "Prompt": "Controlla se ci sono email non lette importanti usando gli strumenti MCP disponibili e riassumi brevemente in italiano."
+        },
+        {
+          "Id": "slack-unread",
+          "Name": "Messaggi Slack",
+          "Enabled": false,
+          "Time": "09:00",
+          "DaysOfWeek": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday"
+          ],
+          "RunOnStartup": false,
+          "SpeakResponse": false,
+          "Prompt": "Verifica se ci sono messaggi Slack non letti nelle ultime 24 ore e riassumi in italiano."
+        }
+      ]
+    }
+  }
+}

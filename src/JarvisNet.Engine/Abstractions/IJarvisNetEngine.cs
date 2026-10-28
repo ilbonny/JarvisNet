@@ -24,6 +24,11 @@ public interface IJarvisNetEngine
 
     Task<string> SendAsync(string userMessage, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Esegue un turno conversazionale come la UI (eventi transcript/chunk), senza avviare STT.
+    /// </summary>
+    Task<string> RunPromptTurnAsync(string userMessage, CancellationToken cancellationToken = default);
+
     void ClearHistory();
 
     IReadOnlyList<ChatMessageContent> GetHistorySnapshot();

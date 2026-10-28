@@ -54,6 +54,25 @@ public sealed class JarvisNetEngine : IJarvisNetEngine
     public Task<string> SendAsync(string userMessage, CancellationToken cancellationToken = default) =>
         _brain.SendAsync(userMessage, cancellationToken);
 
+    public async Task<string> RunPromptTurnAsync(string userMessage, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userMessage))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = userMessage.Trim();
+        UserTranscriptReceived?.Invoke(this, trimmed);
+
+        var reply = await _brain.SendStreamingAsync(
+            trimmed,
+            chunk => AssistantResponseChunk?.Invoke(this, chunk),
+            cancellationToken).ConfigureAwait(false);
+
+        AssistantResponseReceived?.Invoke(this, reply);
+        return reply;
+    }
+
     public void ClearHistory() => _brain.ClearHistory();
 
     public IReadOnlyList<ChatMessageContent> GetHistorySnapshot() => _brain.GetHistorySnapshot();

@@ -4,6 +4,7 @@ using JarvisNet.Engine.Abstractions;
 using JarvisNet.Engine.DependencyInjection;
 using JarvisNet.Engine.Services;
 using JarvisNet.Telegram.DependencyInjection;
+using JarvisNet.UI.DependencyInjection;
 using JarvisNet.UI.Hubs;
 using JarvisNet.UI.Models;
 using JarvisNet.UI.Services;
@@ -18,7 +19,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
     .AddJarvisNetSharedAudioConfiguration(builder.Environment.ContentRootPath)
     .AddJarvisNetSharedEngineConfiguration(builder.Environment.ContentRootPath)
-    .AddJarvisNetSharedTelegramConfiguration(builder.Environment.ContentRootPath);
+    .AddJarvisNetSharedTelegramConfiguration(builder.Environment.ContentRootPath)
+    .AddJarvisNetSharedSchedulesConfiguration(builder.Environment.ContentRootPath);
 
 builder.Services.AddJarvisNetAudio(builder.Configuration);
 builder.Services.AddJarvisNetEngine(builder.Configuration);
@@ -27,6 +29,9 @@ builder.Services.AddSignalR();
 builder.Services.AddHostedService<JarvisUiEventBridge>();
 builder.Services.AddSingleton<SystemStatusProvider>();
 builder.Services.AddSingleton<IAudioLanguageService, AudioLanguageService>();
+builder.Services.AddSingleton<ScheduledPromptStore>(sp =>
+    new ScheduledPromptStore(builder.Environment.ContentRootPath, sp.GetRequiredService<ILogger<ScheduledPromptStore>>()));
+builder.Services.AddHostedService<ScheduledPromptHostedService>();
 
 var app = builder.Build();
 
@@ -111,6 +116,22 @@ app.MapPut("/api/tts/voice", async (TtsVoiceRequest request, IPiperVoiceService 
     {
         await voices.SetVoiceAsync(request.VoiceKey, cancellationToken).ConfigureAwait(false);
         return Results.Ok(new { voiceKey = request.VoiceKey });
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
+app.MapGet("/api/schedules", (ScheduledPromptStore schedules) =>
+    Results.Ok(schedules.ToResponse(schedules.GetSnapshot())));
+
+app.MapPut("/api/schedules", async (ScheduledPromptsUpdateRequest request, ScheduledPromptStore schedules, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        await schedules.SaveAsync(request, cancellationToken).ConfigureAwait(false);
+        return Results.Ok(schedules.ToResponse(schedules.GetSnapshot()));
     }
     catch (ArgumentException ex)
     {
