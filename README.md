@@ -44,6 +44,7 @@ flowchart TB
 | **JarvisNet.Plugins.Sdk** | API per scrivere plugin compatibili con il motore. |
 | **JarvisNet.Plugins.System** | Plugin di sistema forniti out-of-the-box. |
 | **JarvisNet.UI** | API web (Minimal API) — punto di ingresso consigliato per eseguire l’applicazione. |
+| **JarvisNet.Telegram** | Bot Telegram (polling): chat testuale e messaggi vocali verso lo stesso motore della UI. |
 | **JarvisNet.UI.Server** | Progetto web aggiuntivo in solution (scaffold separato). |
 
 ### Test
@@ -98,6 +99,7 @@ Config condivise (caricate con `AddJarvisNetSharedAudioConfiguration` / `AddJarv
 |------|------|
 | Engine (Ollama) | [`config/jarvisnet.engine.json`](config/jarvisnet.engine.json) |
 | MCP (stdio) | [`config/jarvisnet.mcp.json`](config/jarvisnet.mcp.json) |
+| Telegram | [`config/jarvisnet.telegram.json`](config/jarvisnet.telegram.json) + [`config/jarvisnet.telegram.secrets.json`](config/jarvisnet.telegram.secrets.json) (locale, gitignored) |
 
 Il plugin **SearchWeb** (`search_internet`) interroga **Wikipedia** (API REST, lingua da `JarvisNet:Locale:CultureName`, es. `it-IT` → `it.wikipedia.org`). Non serve alcuna API key.
 
@@ -218,12 +220,65 @@ Esempi in chat: *«Leggi le ultime mail in Primary»*, *«Cerca mail non lette d
 
 Aggiungi una chiave in `McpServers` in `jarvisnet.mcp.json` (`Command`, `Args`, `Enabled`, `Env`). Playwright usa anche [`config/playwright-mcp.json`](config/playwright-mcp.json).
 
+## Bot Telegram
+
+Il modulo **JarvisNet.Telegram** parte insieme a `JarvisNet.UI` (hosted service in polling). Puoi scrivere in chat o inviare **messaggi vocali** (icona microfono): i vocali vengono trascritti con lo stesso STT Sherpa configurato in `jarvisnet.audio.json`, poi Jarvis risponde in **testo** con gli stessi plugin/MCP del motore. Ogni chat Telegram ha **cronologia separata** da quella vocale della UI.
+
+Prerequisito: **Ollama** in esecuzione e modelli STT presenti (`scripts/Download-Models.ps1`).
+
+### Creare il bot
+
+1. Su Telegram apri [@BotFather](https://t.me/BotFather) → **/newbot** → segui i passaggi e copia il **token** (`123456789:ABC…`).
+2. In repo, copia [`config/jarvisnet.telegram.secrets.json.example`](config/jarvisnet.telegram.secrets.json.example) in `config/jarvisnet.telegram.secrets.json` (non committato, vedi `.gitignore`) e inserisci token e chat id:
+
+```json
+{
+  "JarvisNet": {
+    "Telegram": {
+      "Enabled": true,
+      "BotToken": "123456789:ABCdefGHIjklMNOpqrsTUVwxyz",
+      "AllowedChatIds": []
+    }
+  }
+}
+```
+
+3. **Riavvia** l’host:
+
+```powershell
+dotnet run --project src/JarvisNet.UI/JarvisNet.UI.csproj
+```
+
+Nei log cerca: `Bot Telegram avviato: @nome_bot`. Se `Enabled` è `false` o manca il token: `Bot Telegram disabilitato`.
+
+### Opzioni (`JarvisNet:Telegram`)
+
+| Chiave | Descrizione |
+|--------|-------------|
+| `Enabled` | `true` per avviare il polling. |
+| `BotToken` | Token da BotFather. Meglio solo in `jarvisnet.telegram.secrets.json`. |
+| `AllowedChatIds` | Elenco numerico di chat id autorizzati. **Array vuoto** = accetta qualsiasi chat (utile per provare); poi restringi. |
+
+Per scoprire il tuo **chat id**: scrivi `/start` o `/chatid` al bot. Se la chat non è in lista e `AllowedChatIds` non è vuoto, il bot risponde con il tuo id da aggiungere in config.
+
+### Comandi bot
+
+| Comando | Effetto |
+|---------|---------|
+| `/start` | Messaggio di benvenuto e riepilogo comandi. |
+| `/reset`, `/nuova` | Azzera la cronologia **solo** di quella chat Telegram. |
+| `/chatid` | Mostra l’id numerico della chat. |
+
+Messaggi normali (testo o vocale) vengono elaborati come richieste a Jarvis (ricerca web, Gmail, Slack, Playwright, ecc., se configurati).
+
+> **Nota:** non committare il token in `jarvisnet.telegram.json`. Le risposte Telegram sono solo testo (niente TTS in chat). I file musicali inviati come “Audio” non sono supportati: usa il **messaggio vocale** nativo di Telegram.
+
 ## Struttura repository
 
 ```
 JarvisNet/
 ├── JarvisNet.slnx
-├── config/                    ← jarvisnet.audio.json, jarvisnet.engine.json, jarvisnet.mcp.json, *.secrets.*
+├── config/                    ← jarvisnet.audio.json, jarvisnet.engine.json, jarvisnet.mcp.json, jarvisnet.telegram.json, *.secrets.*
 ├── scripts/                   ← Download-Models.ps1, Download-Piper.ps1
 ├── models/                    ← stt/, tts/ (gitignored, download script)
 ├── piper/                     ← runtime Piper (gitignored)
@@ -233,6 +288,7 @@ JarvisNet/
 │   ├── JarvisNet.Audio/
 │   ├── JarvisNet.Plugins.Sdk/
 │   ├── JarvisNet.Plugins.System/
+│   ├── JarvisNet.Telegram/
 │   ├── JarvisNet.UI/          ← host principale
 │   └── JarvisNet.UI.Server/
 └── tests/
@@ -255,7 +311,7 @@ JarvisNet/
 
 ## Configurazione
 
-Impostazioni di base in `src/JarvisNet.UI/appsettings.json` e `appsettings.Development.json`. Ollama è configurabile in [`config/jarvisnet.engine.json`](config/jarvisnet.engine.json) (`JarvisNet:Ollama`: `Endpoint`, `ModelName`, `SystemPrompt`, `Temperature`). MCP: sezione [MCP Slack e altri server](#mcp-slack-e-altri-server). Evitare di committare segreti (`config/jarvisnet.mcp.secrets.*`, vedi `.gitignore`).
+Impostazioni di base in `src/JarvisNet.UI/appsettings.json` e `appsettings.Development.json`. Ollama è configurabile in [`config/jarvisnet.engine.json`](config/jarvisnet.engine.json) (`JarvisNet:Ollama`: `Endpoint`, `ModelName`, `SystemPrompt`, `Temperature`). MCP: sezione [MCP Slack e altri server](#mcp-slack-e-altri-server). Telegram: sezione [Bot Telegram](#bot-telegram). Evitare di committare segreti (`config/jarvisnet.mcp.secrets.*`, `config/jarvisnet.telegram.secrets.json`, vedi `.gitignore`).
 
 ## Licenza
 
