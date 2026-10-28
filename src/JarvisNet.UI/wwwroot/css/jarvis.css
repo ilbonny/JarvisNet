@@ -138,6 +138,41 @@ body {
   min-width: 11.5rem;
 }
 
+.sys-metric-telegram {
+  min-width: 10.5rem;
+}
+
+.sys-metric-telegram.sys-metric-off {
+  opacity: 0.55;
+}
+
+.sys-metric-telegram.sys-metric-off .sys-metric-icon-telegram {
+  border-color: rgba(184, 232, 245, 0.25);
+  color: rgba(184, 232, 245, 0.55);
+  box-shadow: none;
+}
+
+.sys-metric-telegram.sys-metric-off .sys-metric-value,
+.sys-metric-telegram.sys-metric-off .sys-metric-status {
+  color: rgba(184, 232, 245, 0.65);
+  text-shadow: none;
+}
+
+.sys-metric-telegram.sys-metric-on .sys-metric-icon-telegram {
+  border-color: rgba(41, 182, 246, 0.65);
+  color: #29b6f6;
+  box-shadow: 0 0 12px rgba(41, 182, 246, 0.35);
+}
+
+.sys-metric-telegram.sys-metric-on .sys-metric-status {
+  color: #29b6f6;
+}
+
+.sys-metric-telegram.sys-metric-on .sys-metric-value {
+  color: #4fc3f7;
+  text-shadow: 0 0 8px rgba(41, 182, 246, 0.35);
+}
+
 .sys-metric-voice-picker {
   display: flex;
   align-items: center;

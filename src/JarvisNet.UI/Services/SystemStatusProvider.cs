@@ -3,6 +3,8 @@ using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using JarvisNet.Engine.Options;
 using JarvisNet.Plugins.Sdk.Options;
+using JarvisNet.Telegram.Options;
+using JarvisNet.Telegram.Services;
 using JarvisNet.UI.Models;
 using Microsoft.Extensions.Options;
 
@@ -12,6 +14,8 @@ public sealed class SystemStatusProvider : IDisposable
 {
     private readonly OllamaOptions _ollama;
     private readonly IOptionsMonitor<JarvisLocaleOptions> _locale;
+    private readonly IOptionsMonitor<TelegramOptions> _telegram;
+    private readonly TelegramBotRuntimeStatus _telegramRuntime;
     private readonly object _netLock = new();
     private long _lastNetBytes;
     private DateTime _lastNetUtc = DateTime.UtcNow;
@@ -20,10 +24,14 @@ public sealed class SystemStatusProvider : IDisposable
 
     public SystemStatusProvider(
         IOptions<OllamaOptions> ollama,
-        IOptionsMonitor<JarvisLocaleOptions> locale)
+        IOptionsMonitor<JarvisLocaleOptions> locale,
+        IOptionsMonitor<TelegramOptions> telegram,
+        TelegramBotRuntimeStatus telegramRuntime)
     {
         _ollama = ollama.Value;
         _locale = locale;
+        _telegram = telegram;
+        _telegramRuntime = telegramRuntime;
         TryInitCpuCounter();
     }
 
@@ -40,6 +48,8 @@ public sealed class SystemStatusProvider : IDisposable
             ? "—"
             : _locale.CurrentValue.CultureName.Trim();
 
+        var telegramSnapshot = SampleTelegram();
+
         return new SystemStatusResponse(
             AiModel: model,
             AiModelStatus: "Active",
@@ -54,7 +64,28 @@ public sealed class SystemStatusProvider : IDisposable
             NetworkKbps: networkKbps,
             NetworkStatus: networkKbps > 0 ? "Active" : "Idle",
             PowerStatus: power.Status,
-            PowerDetail: power.Detail);
+            PowerDetail: power.Detail,
+            TelegramEnabled: telegramSnapshot.Enabled,
+            TelegramBot: telegramSnapshot.BotLabel,
+            TelegramStatus: telegramSnapshot.Status);
+    }
+
+    private (bool Enabled, string BotLabel, string Status) SampleTelegram()
+    {
+        var options = _telegram.CurrentValue;
+        if (!options.IsConfigured)
+        {
+            return (false, "Off", "Disabled");
+        }
+
+        if (_telegramRuntime.IsRunning)
+        {
+            var user = _telegramRuntime.Username;
+            var label = string.IsNullOrWhiteSpace(user) ? "Bot" : "@" + user.TrimStart('@');
+            return (true, label, "Online");
+        }
+
+        return (true, "…", "Starting");
     }
 
     public void Dispose()

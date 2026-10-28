@@ -31,6 +31,11 @@
       statusKey: "powerDetail",
       format: (d) => d.powerStatus,
     },
+    {
+      valueId: "sys-telegram",
+      statusKey: "telegramStatus",
+      format: (d) => d.telegramBot || "Off",
+    },
   ];
 
   function formatPercent(value) {
@@ -50,8 +55,25 @@
     return Math.round(kbps) + " Kbps";
   }
 
+  function applyTelegramMetric(data) {
+    const metric = document.getElementById("sys-telegram-metric");
+    if (!metric || !data) return;
+    const online =
+      data.telegramEnabled === true &&
+      (data.telegramStatus === "Online" || data.telegramStatus === "Starting");
+    metric.classList.toggle("sys-metric-on", online);
+    metric.classList.toggle("sys-metric-off", !online);
+    metric.setAttribute(
+      "title",
+      online
+        ? "Bot Telegram attivo: " + (data.telegramBot || "")
+        : "Bot Telegram disabilitato (config/jarvisnet.telegram)"
+    );
+  }
+
   function applyData(data) {
     if (!data) return;
+    applyTelegramMetric(data);
     fields.forEach(function (field) {
       const valueEl = document.getElementById(field.valueId);
       if (valueEl) {

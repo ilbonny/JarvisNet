@@ -123,7 +123,7 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
     {
         var environment = BuildEnvironmentVariables(serverKey, config.Env);
         var arguments = BuildServerArguments(serverKey, config.Args);
-        var command = NodeToolchainResolver.ResolveExecutable(config.Command);
+        var command = ResolveMcpCommand(serverKey, config.Command);
         var transportOptions = new StdioClientTransportOptions
         {
             Name = serverKey,
@@ -508,6 +508,25 @@ public sealed partial class McpClientManager : IHostedService, IAsyncDisposable
             playwrightConfigPath,
         };
         return args.ToArray();
+    }
+
+    private static string ResolveMcpCommand(string serverKey, string configuredCommand)
+    {
+        if (string.Equals(serverKey, "GitHub", StringComparison.OrdinalIgnoreCase)
+            || GitHubMcpResolver.IsGitHubMcpCommand(configuredCommand))
+        {
+            var path = GitHubMcpResolver.ResolveExecutable(AppContext.BaseDirectory);
+            if (!File.Exists(path))
+            {
+                throw new FileNotFoundException(
+                    $"Binario GitHub MCP non trovato: {path}. Esegui scripts/Download-GitHubMcp.ps1 dalla root del repo.",
+                    path);
+            }
+
+            return path;
+        }
+
+        return NodeToolchainResolver.ResolveExecutable(configuredCommand);
     }
 
     private static Dictionary<string, string?> BuildEnvironmentVariables(

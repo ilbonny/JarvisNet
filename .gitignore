@@ -98,6 +98,7 @@ _ReSharper*/
 ## Local ONNX / Piper assets
 models/
 piper/
+github-mcp/
 
 ## Backup & temp
 *~

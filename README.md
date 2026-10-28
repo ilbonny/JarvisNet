@@ -91,6 +91,7 @@ powershell -ExecutionPolicy Bypass -File scripts/Download-Models.ps1
 powershell -ExecutionPolicy Bypass -File scripts/Download-Models.ps1 -Locale es
 powershell -ExecutionPolicy Bypass -File scripts/Download-Models.ps1 -Locale en
 powershell -ExecutionPolicy Bypass -File scripts/Download-Piper.ps1
+powershell -ExecutionPolicy Bypass -File scripts/Download-GitHubMcp.ps1
 ```
 
 Config condivise (caricate con `AddJarvisNetSharedAudioConfiguration` / `AddJarvisNetSharedEngineConfiguration`):
@@ -216,6 +217,39 @@ Esempi in chat: *«Leggi le ultime mail in Primary»*, *«Cerca mail non lette d
 
 > **Nota:** su **Google Workspace** l’admin può disabilitare IMAP. In quel caso serve l’API OAuth (Google Cloud) o il [MCP ufficiale remoto](https://developers.google.com/workspace/gmail/api/guides/configure-mcp-server?hl=it). Revoca l’accesso eliminando la password per le app in qualsiasi momento.
 
+### Aggiungere GitHub (binario ufficiale, senza Docker)
+
+Usiamo il server MCP ufficiale [`github/github-mcp-server`](https://github.com/github/github-mcp-server) come **eseguibile nativo** in `github-mcp/` (come Piper in `piper/`). Il pacchetto npm `@modelcontextprotocol/server-github` è deprecato: non usarlo.
+
+1. **Scarica il binario** (Windows; dalla root del repo):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/Download-GitHubMcp.ps1
+```
+
+2. **Personal Access Token** — [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) (fine-grained o classic). Scope utili: `repo` (repo privati), `read:org` se serve, `read:user`. Per sole operazioni in lettura preferisci un token fine-grained con permessi minimi sui repository che ti interessano.
+
+3. **Secrets** in [`config/jarvisnet.mcp.secrets.json`](config/jarvisnet.mcp.secrets.json):
+
+```json
+{
+  "McpServers": {
+    "GitHub": {
+      "Enabled": true,
+      "Env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "github_pat_…"
+      }
+    }
+  }
+}
+```
+
+4. **Riavvia** l’host. Nei log: `Server MCP GitHub: registrati N tool`.
+
+Esempi in chat: *«Elenca le issue aperte su JarvisNet»*, *«Mostra l’ultimo commit su main»*, *«Cerca PR con label bug»*.
+
+> **Nota:** non committare il token. Su Linux/macOS scarica manualmente l’asset giusto dalla [pagina release](https://github.com/github/github-mcp-server/releases) e metti l’eseguibile in `github-mcp/github-mcp-server` (senza `.exe`).
+
 ### Altri MCP
 
 Aggiungi una chiave in `McpServers` in `jarvisnet.mcp.json` (`Command`, `Args`, `Enabled`, `Env`). Playwright usa anche [`config/playwright-mcp.json`](config/playwright-mcp.json).
@@ -279,9 +313,10 @@ Messaggi normali (testo o vocale) vengono elaborati come richieste a Jarvis (ric
 JarvisNet/
 ├── JarvisNet.slnx
 ├── config/                    ← jarvisnet.audio.json, jarvisnet.engine.json, jarvisnet.mcp.json, jarvisnet.telegram.json, *.secrets.*
-├── scripts/                   ← Download-Models.ps1, Download-Piper.ps1
+├── scripts/                   ← Download-Models.ps1, Download-Piper.ps1, Download-GitHubMcp.ps1
 ├── models/                    ← stt/, tts/ (gitignored, download script)
 ├── piper/                     ← runtime Piper (gitignored)
+├── github-mcp/                ← github-mcp-server.exe (gitignored, download script)
 ├── src/
 │   ├── JarvisNet.Core/
 │   ├── JarvisNet.Engine/

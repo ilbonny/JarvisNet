@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
             return new TelegramBotClient(options.BotToken);
         });
 
+        services.AddSingleton<TelegramBotRuntimeStatus>();
         services.AddSingleton<JarvisTelegramUpdateHandler>();
         services.AddHostedService<JarvisTelegramBotHostedService>();
 

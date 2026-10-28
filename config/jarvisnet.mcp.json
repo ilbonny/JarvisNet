@@ -17,6 +17,12 @@
       "Args": ["-y", "gmail-mcp-imap"],
       "Enabled": false,
       "Env": {}
+    },
+    "GitHub": {
+      "Command": "github-mcp-server",
+      "Args": ["stdio"],
+      "Enabled": false,
+      "Env": {}
     }
   }
 }
