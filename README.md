@@ -45,6 +45,7 @@ flowchart TB
 | **JarvisNet.Plugins.System** | Plugin di sistema forniti out-of-the-box. |
 | **JarvisNet.UI** | API web (Minimal API) — punto di ingresso consigliato per eseguire l’applicazione. |
 | **JarvisNet.Telegram** | Bot Telegram (polling): chat testuale e messaggi vocali verso lo stesso motore della UI. |
+| **JarvisNet.Camera** | Ingest foto da ESP32-CAM (`POST /api/camera/motion`), caption opzionale con modello vision Ollama, invio alert su Telegram. |
 | **JarvisNet.UI.Server** | Progetto web aggiuntivo in solution (scaffold separato). |
 
 ### Test
@@ -63,7 +64,7 @@ flowchart TB
 ## Prerequisiti
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- Per il motore LLM locale: [Ollama](https://ollama.com/) con modello **`jarvis:1b-new`** (tag in `/api/tags`; es. `ollama pull jarvis:1b-new`)
+- Per il motore LLM locale: [Ollama](https://ollama.com/) con modello `**jarvis:1b-new**` (tag in `/api/tags`; es. `ollama pull jarvis:1b-new`)
 - Stack audio: **Windows** (WASAPI) e **Linux** (`libasound2`); modelli in `models/` e Piper in `piper/` alla root del repo
 
 ## Quick start
@@ -101,6 +102,7 @@ Config condivise (caricate con `AddJarvisNetSharedAudioConfiguration` / `AddJarv
 | Engine (Ollama) | [`config/jarvisnet.engine.json`](config/jarvisnet.engine.json) |
 | MCP (stdio) | [`config/jarvisnet.mcp.json`](config/jarvisnet.mcp.json) |
 | Telegram | [`config/jarvisnet.telegram.json`](config/jarvisnet.telegram.json) + [`config/jarvisnet.telegram.secrets.json`](config/jarvisnet.telegram.secrets.json) (locale, gitignored) |
+| Camera / ESP32 | [`config/jarvisnet.camera.json`](config/jarvisnet.camera.json) + [`config/jarvisnet.camera.secrets.json`](config/jarvisnet.camera.secrets.json) (locale, gitignored) |
 
 Il plugin **SearchWeb** (`search_internet`) interroga **Wikipedia** (API REST, lingua da `JarvisNet:Locale:CultureName`, es. `it-IT` → `it.wikipedia.org`). Non serve alcuna API key.
 
@@ -228,7 +230,6 @@ powershell -ExecutionPolicy Bypass -File scripts/Download-GitHubMcp.ps1
 ```
 
 2. **Personal Access Token** — [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) (fine-grained o classic). Scope utili: `repo` (repo privati), `read:org` se serve, `read:user`. Per sole operazioni in lettura preferisci un token fine-grained con permessi minimi sui repository che ti interessano.
-
 3. **Secrets** in [`config/jarvisnet.mcp.secrets.json`](config/jarvisnet.mcp.secrets.json):
 
 ```json
@@ -307,12 +308,114 @@ Messaggi normali (testo o vocale) vengono elaborati come richieste a Jarvis (ric
 
 > **Nota:** non committare il token in `jarvisnet.telegram.json`. Le risposte Telegram sono solo testo (niente TTS in chat). I file musicali inviati come “Audio” non sono supportati: usa il **messaggio vocale** nativo di Telegram.
 
+## Sorveglianza ESP32-CAM (movimento → Telegram)
+
+Il modulo **JarvisNet.Camera** espone `POST /api/camera/motion` sull’host UI. Una **AI-Thinker ESP32-CAM** (firmware in [`esp32/jarvisnet-esp32-cam/`](esp32/jarvisnet-esp32-cam/)) confronta frame JPEG per rilevare movimento e invia lo scatto via **Wi‑Fi** al PC dove gira JarvisNet. L’host può descrivere la scena con un modello **vision** su Ollama (default `**moondream`**, separato dal modello chat) e inoltra **foto + didascalia** alle chat Telegram configurate.
+
+```mermaid
+sequenceDiagram
+  participant CAM as ESP32-CAM
+  participant UI as JarvisNet.UI
+  participant Ollama as Ollama (moondream)
+  participant TG as Telegram
+
+  CAM->>UI: POST /api/camera/motion (JPEG, X-Api-Key)
+  UI->>Ollama: caption opzionale
+  Ollama-->>UI: frase breve
+  UI->>TG: SendPhoto + caption
+```
+
+### Prerequisiti lato JarvisNet
+
+1. **Telegram** attivo ([sezione Bot Telegram](#bot-telegram)): token in `jarvisnet.telegram.secrets.json`, `Enabled: true`.
+2. **Camera** in [`config/jarvisnet.camera.json`](config/jarvisnet.camera.json): `JarvisNet:Camera:Enabled: true`.
+3. **Destinatari alert:** `NotifyChatIds` in `jarvisnet.camera.secrets.json` oppure gli stessi `AllowedChatIds` di Telegram (se `NotifyChatIds` è vuoto).
+4. **Vision (opzionale):** con `VisionAnalysisEnabled: true`, installa il modello vision (non riusare il modello chat principale):
+
+```powershell
+ollama pull moondream
+```
+
+5. **Rete e firewall:** la ESP32 deve raggiungere l’IP LAN del PC (es. `http://192.168.x.x:5194` in `secrets.h`), non `127.0.0.1`. Avvia l’host in ascolto su **tutte le interfacce** e apri la porta **5194** in ingresso su Windows Firewall (rete privata):
+
+```powershell
+dotnet run --project C:\Projects\JarvisNet\src\JarvisNet.UI\JarvisNet.UI.csproj --urls "http://0.0.0.0:5194"
+```
+
+`0.0.0.0` espone l’API anche verso la LAN; il profilo predefinito in `launchSettings.json` può restare legato a `localhost` e non bastare per la ESP32.
+
+Config condivisa caricata con `AddJarvisNetSharedCameraConfiguration` (come audio/engine).
+
+### Segreti camera
+
+Crea `config/jarvisnet.camera.secrets.json` (non committato) con almeno la chiave ingest e, se serve, le chat da notificare:
+
+```json
+{
+  "JarvisNet": {
+    "Camera": {
+      "IngestApiKey": "genera-un-uuid-o-stringa-lunga",
+      "NotifyChatIds": [123456789]
+    }
+  }
+}
+```
+
+Lo stesso valore di `IngestApiKey` va in `JARVIS_API_KEY` nel firmware (`esp32/jarvisnet-esp32-cam/src/secrets.h`). Se `IngestApiKey` è vuoto, l’endpoint accetta POST senza header (solo per test in rete fidata).
+
+### Opzioni (`JarvisNet:Camera`)
+
+| Chiave | Descrizione |
+|--------|-------------|
+| `Enabled` | `true` per accettare ingest e inviare su Telegram. |
+| `IngestApiKey` | Se impostata, richiede header `X-Api-Key` uguale al valore (meglio in secrets). |
+| `NotifyChatIds` | Chat Telegram da avvisare. Vuoto → usa `Telegram:AllowedChatIds`. |
+| `MinSecondsBetweenAlerts` | Cooldown lato server (default 30 s) tra un invio e l’altro. |
+| `MotionCaption` | Didascalia se l’analisi vision è disabilitata o fallisce. |
+| `VisionAnalysisEnabled` | Usa Ollama + `VisionModelName` per una frase in italiano sulla foto. |
+| `VisionModelName` | Default `moondream`. |
+| `VisionPrompt` / `VisionCaptionFormat` | Prompt e template (`{0}` = descrizione vision). |
+
+**API:** corpo `image/jpeg` raw, oppure multipart con campo `image` o `file`. Query opzionale `?caption=…` sovrascrive la didascalia. Risposte: `200` inviato, `401` chiave errata, `429` cooldown, `503` camera/telegram disabilitati.
+
+### Firmware ESP32-CAM
+
+Progetto **PlatformIO** separato dal build .NET (non è in `JarvisNet.slnx`). Istruzioni dettagliate (alimentazione 5 V ≥ 2 A, flash, GPIO0, soglie movimento): **[`esp32/jarvisnet-esp32-cam/README.md`](esp32/jarvisnet-esp32-cam/README.md)**.
+
+Sintesi:
+
+1. Copia `src/secrets.example.h` → `src/secrets.h` (Wi‑Fi, URL base Jarvis, `JARVIS_API_KEY`).
+2. Cablaggio **CP2102 → ESP32-CAM** (dettagli e procedura flash in [`esp32/jarvisnet-esp32-cam/README.md`](esp32/jarvisnet-esp32-cam/README.md)):
+
+| Filo CP2102 | Pin ESP32-CAM |
+|-------------|---------------|
+| 5V (rosso) | **5V** |
+| GND (nero) | **GND** |
+| TX (verde, «D») | **U0T** |
+| RX (bianco, «R») | **U0R** |
+| *(solo upload)* | **GPIO0** → **GND** |
+
+Per flash: GPIO0 a GND → reset → `pio run -t upload` → togli GPIO0 da GND → reset → `pio device monitor`.
+
+3. Imposta `upload_port` / `monitor_port` in `platformio.ini` (es. `COM3`).
+4. Upload e monitor:
+
+```powershell
+cd esp32/jarvisnet-esp32-cam
+pio run -t upload oppure python -m platformio run -t upload
+pio device monitor oppure python -m platformio device monitor
+```
+
+La COM serve solo per programmare e debug; le foto viaggiano su Wi‑Fi verso JarvisNet.
+
 ## Struttura repository
 
 ```
 JarvisNet/
 ├── JarvisNet.slnx
-├── config/                    ← jarvisnet.audio.json, jarvisnet.engine.json, jarvisnet.mcp.json, jarvisnet.telegram.json, *.secrets.*
+├── config/                    ← jarvisnet.audio.json, jarvisnet.engine.json, jarvisnet.mcp.json, jarvisnet.telegram.json, jarvisnet.camera.json, *.secrets.*
+├── esp32/
+│   └── jarvisnet-esp32-cam/   ← firmware PlatformIO (motion → POST /api/camera/motion)
 ├── scripts/                   ← Download-Models.ps1, Download-Piper.ps1, Download-GitHubMcp.ps1
 ├── models/                    ← stt/, tts/ (gitignored, download script)
 ├── piper/                     ← runtime Piper (gitignored)
@@ -324,6 +427,7 @@ JarvisNet/
 │   ├── JarvisNet.Plugins.Sdk/
 │   ├── JarvisNet.Plugins.System/
 │   ├── JarvisNet.Telegram/
+│   ├── JarvisNet.Camera/
 │   ├── JarvisNet.UI/          ← host principale
 │   └── JarvisNet.UI.Server/
 └── tests/
@@ -346,7 +450,7 @@ JarvisNet/
 
 ## Configurazione
 
-Impostazioni di base in `src/JarvisNet.UI/appsettings.json` e `appsettings.Development.json`. Ollama è configurabile in [`config/jarvisnet.engine.json`](config/jarvisnet.engine.json) (`JarvisNet:Ollama`: `Endpoint`, `ModelName`, `SystemPrompt`, `Temperature`). MCP: sezione [MCP Slack e altri server](#mcp-slack-e-altri-server). Telegram: sezione [Bot Telegram](#bot-telegram). Evitare di committare segreti (`config/jarvisnet.mcp.secrets.*`, `config/jarvisnet.telegram.secrets.json`, vedi `.gitignore`).
+Impostazioni di base in `src/JarvisNet.UI/appsettings.json` e `appsettings.Development.json`. Ollama è configurabile in [`config/jarvisnet.engine.json`](config/jarvisnet.engine.json) (`JarvisNet:Ollama`: `Endpoint`, `ModelName`, `SystemPrompt`, `Temperature`). MCP: sezione [MCP Slack e altri server](#mcp-slack-e-altri-server). Telegram: sezione [Bot Telegram](#bot-telegram). Camera / ESP32: sezione [Sorveglianza ESP32-CAM](#sorveglianza-esp32-cam-movimento--telegram). Evitare di committare segreti (`config/jarvisnet.mcp.secrets.*`, `config/jarvisnet.telegram.secrets.json`, `config/jarvisnet.camera.secrets.json`, `esp32/**/secrets.h`, vedi `.gitignore`).
 
 ## Licenza
 
