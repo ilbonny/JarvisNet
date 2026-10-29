@@ -11,7 +11,10 @@
       "VisionKeepAliveSeconds": 0,
       "VisionMaxTokens": 48,
       "VisionPrompt": "Descrivi in una sola breve frase in italiano cosa vedi in questa foto di sorveglianza. Esempi: una persona con maglietta nera; un gatto sul divano; nessuno in vista. Solo la frase, massimo 15 parole, senza virgolette.",
-      "VisionCaptionFormat": "Da questa foto ho rilevato \"{0}\""
+      "VisionCaptionFormat": "Da questa foto ho rilevato \"{0}\"",
+      "DefaultMotionDetectionEnabled": false,
+      "DeviceControlPort": 80,
+      "MaxVideoSeconds": 10
     }
   }
 }

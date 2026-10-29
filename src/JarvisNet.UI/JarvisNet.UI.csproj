@@ -18,6 +18,23 @@
     <ProjectReference Include="..\JarvisNet.Telegram\JarvisNet.Telegram.csproj" />
   </ItemGroup>
 
+  <Target Name="CopyJarvisCameraPlugin" AfterTargets="Build">
+    <PropertyGroup>
+      <_CameraPluginDll>$(MSBuildProjectDirectory)\..\JarvisNet.CameraPlugin\bin\$(Configuration)\$(TargetFramework)\JarvisNet.CameraPlugin.dll</_CameraPluginDll>
+    </PropertyGroup>
+    <MSBuild
+      Projects="$(MSBuildProjectDirectory)\..\JarvisNet.CameraPlugin\JarvisNet.CameraPlugin.csproj"
+      Properties="Configuration=$(Configuration)"
+      Targets="Build"
+      Condition="!Exists('$(_CameraPluginDll)')" />
+    <MakeDir Directories="$(OutputPath)Plugins" Condition="!Exists('$(OutputPath)Plugins')" />
+    <Copy
+      SourceFiles="$(_CameraPluginDll)"
+      DestinationFolder="$(OutputPath)Plugins"
+      SkipUnchangedFiles="true"
+      Condition="Exists('$(_CameraPluginDll)')" />
+  </Target>
+
   <Target Name="CopyJarvisSearchWebPlugin" AfterTargets="Build">
     <PropertyGroup>
       <_SearchWebPluginDll>$(MSBuildProjectDirectory)\..\JarvisNet.SearchWeb\bin\$(Configuration)\$(TargetFramework)\JarvisNet.SearchWeb.dll</_SearchWebPluginDll>

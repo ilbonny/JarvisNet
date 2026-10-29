@@ -6,7 +6,7 @@
         {
           "Id": "morning-email-check",
           "Name": "Controllo email mattutino",
-          "Enabled": true,
+          "Enabled": false,
           "Time": "08:00",
           "DaysOfWeek": [
             "Monday",

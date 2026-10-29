@@ -1,6 +1,10 @@
 # JarvisNet ESP32-CAM (motion → Telegram)
 
-Firmware per **AI-Thinker ESP32-CAM**: confronto frame per rilevare movimento, invio JPEG a JarvisNet (`POST /api/camera/motion`), che inoltra la foto via bot Telegram.
+Firmware per **AI-Thinker ESP32-CAM**: heartbeat verso JarvisNet, controllo remoto (foto/clip/motion) e **movimento disattivato di default**.
+
+- **Heartbeat** (`POST /api/camera/heartbeat`): nome host e IP nel pannello **DISPOSITIVI**; la risposta JSON imposta `motionDetectionEnabled` sulla scheda.
+- **HTTP locale** (porta 80, header `X-Api-Key` come ingest): `GET /capture`, `GET /clip?seconds=1-10`, `PUT /motion` con `{"enabled":true|false}`.
+- **Movimento** (solo se abilitato da Jarvis): invio JPEG a `POST /api/camera/motion` → Telegram.
 
 ## Alimentazione (importante)
 
@@ -67,7 +71,22 @@ dotnet run --project C:\Projects\JarvisNet\src\JarvisNet.UI\JarvisNet.UI.csproj 
    - `NotifyChatIds` oppure usa gli stessi `AllowedChatIds` di Telegram
    - Cooldown default 30 s tra un alert e l’altro
 
-## Upload firmware
+## Aggiornamenti OTA (senza cavo USB / GPIO0)
+
+Dopo **un** flash via USB, il firmware espone **ArduinoOTA** sulla stessa rete Wi‑Fi.
+
+1. Nel monitor seriale annota l’**IP** (es. `192.168.1.60`) e verifica la riga `OTA ready`.
+2. Aggiorna `upload_port` in `platformio.ini` → env **`esp32cam_ota`**, oppure passa l’IP al comando.
+3. PC e ESP32 sulla **stessa LAN**; durante l’upload la camera non invia foto (normale).
+
+```powershell
+cd esp32/jarvisnet-esp32-cam
+python -m platformio run -e esp32cam_ota -t upload --upload-port 192.168.1.60
+```
+
+Password OTA opzionale: `#define OTA_PASSWORD "..."` in `secrets.h` e `--auth=...` in `upload_flags` (env `esp32cam_ota`).
+
+## Upload firmware (prima volta o se OTA non risponde)
 
 Vedi [Collegamenti CP2102](#collegamenti-cp2102--esp32-cam) per cablaggio e sequenza GPIO0. Dalla root del repo:
 
@@ -82,3 +101,4 @@ pio device monitor
 - **COM3** serve solo per programmare e debug seriale; le foto viaggiano su **Wi‑Fi** verso il PC.
 - Su Windows servono **`--urls "http://0.0.0.0:5194"`** (vedi Prerequisiti) e regola firewall in ingresso sulla porta **5194** (rete privata).
 - Regola `MOTION_THRESHOLD` e `MOTION_PIXELS_MIN` in `main.cpp` se hai troppi falsi positivi.
+- **Risoluzione foto:** in `main.cpp` modifica `CAPTURE_FRAME_SIZE` (`FRAMESIZE_QVGA`, `FRAMESIZE_VGA`, `FRAMESIZE_SVGA`) e opzionalmente `CAPTURE_JPEG_QUALITY` (più basso = più nitide). SVGA/UXGA richiedono PSRAM e 5 V stabili; upload Wi‑Fi più lento.

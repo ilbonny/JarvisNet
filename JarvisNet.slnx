@@ -19,6 +19,7 @@
   <Project Path="src/JarvisNet.Engine/JarvisNet.Engine.csproj" Id="9bd24a06-6a0b-4624-81d7-2f9f0babaee8" />
   <Project Path="src/JarvisNet.Plugins.Sdk/JarvisNet.Plugins.Sdk.csproj" />
   <Project Path="src/JarvisNet.SearchWeb/JarvisNet.SearchWeb.csproj" />
+  <Project Path="src/JarvisNet.CameraPlugin/JarvisNet.CameraPlugin.csproj" />
   <Project Path="src/JarvisNet.Camera/JarvisNet.Camera.csproj" />
   <Project Path="src/JarvisNet.Telegram/JarvisNet.Telegram.csproj" />
   <Project Path="src/JarvisNet.UI/JarvisNet.UI.csproj" />

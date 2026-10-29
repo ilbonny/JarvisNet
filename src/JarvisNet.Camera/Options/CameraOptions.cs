@@ -9,10 +9,24 @@ public sealed class CameraOptions
     /// <summary>When set, POST /api/camera/motion must send header X-Api-Key with this value.</summary>
     public string IngestApiKey { get; set; } = string.Empty;
 
+    public string ResolvedIngestApiKey => IngestApiKey.Trim();
+
     /// <summary>Telegram chat ids to notify. When empty, uses JarvisNet:Telegram:AllowedChatIds.</summary>
     public long[] NotifyChatIds { get; set; } = [];
 
     public int MinSecondsBetweenAlerts { get; set; } = 30;
+
+    /// <summary>Devices without heartbeat/motion for this many seconds show as offline in the UI.</summary>
+    public int DeviceOnlineSeconds { get; set; } = 120;
+
+    /// <summary>HTTP port for on-device control (capture / clip / motion).</summary>
+    public int DeviceControlPort { get; set; } = 80;
+
+    /// <summary>Max seconds for capture_video (ESP32 clip).</summary>
+    public int MaxVideoSeconds { get; set; } = 10;
+
+    /// <summary>Default motion detection for newly seen cameras (usually false).</summary>
+    public bool DefaultMotionDetectionEnabled { get; set; }
 
     public string MotionCaption { get; set; } = "Movimento rilevato dalla ESP32-CAM";
 

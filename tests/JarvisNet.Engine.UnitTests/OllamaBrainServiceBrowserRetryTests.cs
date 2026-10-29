@@ -53,6 +53,10 @@ public sealed class OllamaBrainServiceBrowserRetryTests
     {
         public int ToolsInvokedThisTurn { get; private set; }
 
-        public void BeginUserTurn() => ToolsInvokedThisTurn = 0;
+        public string CurrentSessionKey => JarvisNet.Core.JarvisChatSessionKeys.Voice;
+
+        public void BeginUserTurn(string sessionKey) => ToolsInvokedThisTurn = 0;
+
+        public void ResetToolsInvokedThisTurn() => ToolsInvokedThisTurn = 0;
     }
 }

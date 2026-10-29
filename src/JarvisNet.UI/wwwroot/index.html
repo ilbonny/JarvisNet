@@ -127,6 +127,18 @@
 
   <main class="layout">
     <aside class="settings-sidebar" aria-label="Impostazioni">
+      <section id="devices-panel" class="devices-panel settings-panel" aria-label="Connected devices">
+        <header class="voice-panel-header devices-panel-header settings-panel-trigger" role="button" tabindex="0" aria-expanded="true" aria-controls="devices-panel-body">
+          <span class="settings-panel-chevron" aria-hidden="true"></span>
+          <span class="voice-panel-title">DEVICES</span>
+          <span class="voice-panel-status" id="devices-panel-status">—</span>
+        </header>
+        <div id="devices-panel-body" class="settings-panel-body">
+          <ul id="devices-list" class="devices-list" role="list"></ul>
+          <p id="devices-empty" class="devices-empty" hidden>No devices registered.</p>
+        </div>
+      </section>
+
       <div class="voice-settings-panel settings-panel" aria-label="Voce e lingua">
         <header class="voice-panel-header settings-panel-trigger" role="button" tabindex="0" aria-expanded="true" aria-controls="voice-panel-body">
           <span class="settings-panel-chevron" aria-hidden="true"></span>
@@ -231,6 +243,7 @@
     </section>
   </main>
 
+  <script src="js/jarvis-devices-panel.js"></script>
   <script src="js/jarvis-system-status.js"></script>
   <script src="js/jarvis-settings-panels.js"></script>
   <script src="js/jarvis-voice-panel.js"></script>

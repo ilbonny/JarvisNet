@@ -25,8 +25,20 @@ public static class ServiceCollectionExtensions
             }
         });
 
+        services.AddHttpClient(CameraDeviceHttpClient.HttpClientName, (sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptionsMonitor<CameraOptions>>().CurrentValue;
+            client.Timeout = TimeSpan.FromSeconds(Math.Max(15, options.MaxVideoSeconds + 10));
+        });
+
         services.AddSingleton<CameraVisionCaptionService>();
         services.AddSingleton<CameraMotionAlertService>();
+        services.AddSingleton<ConnectedDeviceRegistry>();
+        services.AddSingleton<CameraMediaCache>();
+        services.AddSingleton<ICameraTurnMediaBuffer, CameraTurnMediaBuffer>();
+        services.AddSingleton<CameraDeviceHttpClient>();
+        services.AddSingleton<CameraControlService>();
+        services.AddSingleton<CameraMediaDeliveryService>();
         return services;
     }
 }

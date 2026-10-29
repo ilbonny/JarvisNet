@@ -58,7 +58,7 @@ public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
                 "Web search without SearchWeb tool; retrying with nudge (query: {Preview}).",
                 userMessage.Length > 80 ? userMessage[..80] + "…" : userMessage);
 
-            context.TurnScope.BeginUserTurn();
+            context.TurnScope.ResetToolsInvokedThisTurn();
             var searchRetryHistory = CloneHistory(context.HistorySnapshot);
             searchRetryHistory.AddUserMessage(InternetSearchAssist.SearchToolNudgeUserMessage);
 
@@ -94,7 +94,7 @@ public sealed class SearchWebPluginTurnHandler : IJarvisPluginTurnHandler
             "Suspicious web answer without MCP tools (user turn: {Preview}); retrying with nudge.",
             userMessage.Length > 80 ? userMessage[..80] + "…" : userMessage);
 
-        context.TurnScope.BeginUserTurn();
+        context.TurnScope.ResetToolsInvokedThisTurn();
         var retryHistory = CloneHistory(context.HistorySnapshot);
         retryHistory.AddUserMessage(BrowserResponseGuard.ToolNudgeUserMessage);
 

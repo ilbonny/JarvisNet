@@ -148,6 +148,12 @@
     }
   });
 
+  connection.on("DevicesChanged", (devices) => {
+    if (window.jarvisDevicesPanel) {
+      window.jarvisDevicesPanel.applyDevices(devices);
+    }
+  });
+
   connection.on("ModuleToolStarted", (payload) => {
     if (window.jarvisModuleOrbit) {
       window.jarvisModuleOrbit.onToolStarted(payload);
@@ -183,6 +189,38 @@
 
   connection.on("JarvisChunkEnd", () => {
     finalizeJarvisLine();
+  });
+
+  connection.on("JarvisMedia", (payload) => {
+    if (!chatLog || !payload || !payload.url) return;
+    finalizeJarvisLine();
+    const row = document.createElement("div");
+    row.className = "msg-row msg-jarvis msg-jarvis-media";
+    const caption = payload.caption ? escapeHtml(payload.caption) : "";
+    const kind = String(payload.kind || "photo").toLowerCase();
+    let mediaHtml;
+    if (kind === "video") {
+      mediaHtml =
+        '<video class="jarvis-media-video" controls playsinline src="' +
+        escapeHtml(payload.url) +
+        '"></video>';
+    } else {
+      mediaHtml =
+        '<img class="jarvis-media-photo" alt="" src="' +
+        escapeHtml(payload.url) +
+        '" />';
+    }
+    row.innerHTML =
+      '<div class="msg-avatar jarvis-avatar" aria-hidden="true"></div>' +
+      '<div class="msg-bubble jarvis-media-bubble">' +
+      mediaHtml +
+      (caption ? '<p class="msg-text jarvis-media-caption">' + caption + "</p>" : "") +
+      '<time class="msg-time">' +
+      formatTime() +
+      "</time>" +
+      "</div>";
+    chatLog.appendChild(row);
+    scrollChatToBottom();
   });
 
   connection.onreconnecting(() => setStatus(false));

@@ -1,3 +1,4 @@
+using JarvisNet.Camera.Services;
 using JarvisNet.Core.Enums;
 using JarvisNet.Engine.Abstractions;
 using JarvisNet.Engine.Models;
@@ -12,15 +13,18 @@ public sealed class JarvisUiEventBridge : IHostedService
     private readonly IHubContext<JarvisHub> _hubContext;
     private readonly IJarvisNetEngine _engine;
     private readonly JarvisModuleCatalogService _moduleCatalog;
+    private readonly ConnectedDeviceRegistry _devices;
 
     public JarvisUiEventBridge(
         IHubContext<JarvisHub> hubContext,
         IJarvisNetEngine engine,
-        JarvisModuleCatalogService moduleCatalog)
+        JarvisModuleCatalogService moduleCatalog,
+        ConnectedDeviceRegistry devices)
     {
         _hubContext = hubContext;
         _engine = engine;
         _moduleCatalog = moduleCatalog;
+        _devices = devices;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -34,10 +38,12 @@ public sealed class JarvisUiEventBridge : IHostedService
         _engine.ModuleToolExecutionStarted += OnModuleToolExecutionStarted;
         _engine.ModuleToolExecutionCompleted += OnModuleToolExecutionCompleted;
         _moduleCatalog.CatalogChanged += OnModuleCatalogChanged;
+        _devices.Changed += OnDevicesChanged;
 
         await _hubContext.Clients.All.SendAsync("StateChanged", JarvisState.Idle.ToString(), cancellationToken)
             .ConfigureAwait(false);
         await BroadcastModulesCatalogAsync(cancellationToken).ConfigureAwait(false);
+        await BroadcastDevicesAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
@@ -51,6 +57,7 @@ public sealed class JarvisUiEventBridge : IHostedService
         _engine.ModuleToolExecutionStarted -= OnModuleToolExecutionStarted;
         _engine.ModuleToolExecutionCompleted -= OnModuleToolExecutionCompleted;
         _moduleCatalog.CatalogChanged -= OnModuleCatalogChanged;
+        _devices.Changed -= OnDevicesChanged;
 
         return Task.CompletedTask;
     }
@@ -95,6 +102,32 @@ public sealed class JarvisUiEventBridge : IHostedService
 
     private void OnModuleCatalogChanged(object? sender, EventArgs e) =>
         _ = BroadcastModulesCatalogAsync(CancellationToken.None);
+
+    private void OnDevicesChanged(object? sender, EventArgs e) =>
+        _ = BroadcastDevicesAsync(CancellationToken.None);
+
+    private Task BroadcastDevicesAsync(CancellationToken cancellationToken)
+    {
+        var devices = _devices.GetSnapshots()
+            .Select(d => new
+            {
+                id = d.Id,
+                type = d.Type,
+                displayName = d.DisplayName,
+                hostLabel = d.HostLabel,
+                ipAddress = d.IpAddress,
+                firstSeenUtc = d.FirstSeenUtc,
+                lastSeenUtc = d.LastSeenUtc,
+                lastMotionUtc = d.LastMotionUtc,
+                status = d.Status,
+                isOnline = d.IsOnline,
+                isOperational = d.IsOperational,
+                motionDetectionEnabled = d.MotionDetectionEnabled,
+            })
+            .ToList();
+
+        return _hubContext.Clients.All.SendAsync("DevicesChanged", devices, cancellationToken);
+    }
 
     private Task BroadcastModulesCatalogAsync(CancellationToken cancellationToken)
     {

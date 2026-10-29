@@ -19,11 +19,24 @@ public sealed class JarvisTurnScope : IJarvisTurnScope, IFunctionInvocationFilte
 
     public int ToolsInvokedThisTurn { get; private set; }
 
+    public string CurrentSessionKey { get; private set; } = JarvisNet.Core.JarvisChatSessionKeys.Voice;
+
     public event EventHandler<ModuleToolEventArgs>? ModuleToolExecutionStarted;
 
     public event EventHandler<ModuleToolEventArgs>? ModuleToolExecutionCompleted;
 
-    public void BeginUserTurn()
+    public void BeginUserTurn(string sessionKey)
+    {
+        lock (_lock)
+        {
+            CurrentSessionKey = string.IsNullOrWhiteSpace(sessionKey)
+                ? JarvisNet.Core.JarvisChatSessionKeys.Voice
+                : sessionKey;
+            ToolsInvokedThisTurn = 0;
+        }
+    }
+
+    public void ResetToolsInvokedThisTurn()
     {
         lock (_lock)
         {

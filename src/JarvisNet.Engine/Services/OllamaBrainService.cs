@@ -95,7 +95,7 @@ public sealed class OllamaBrainService
         await _completionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var assistantText = await CompleteAssistantTurnAsync(trimmed, historySnapshot, cancellationToken)
+            var assistantText = await CompleteAssistantTurnAsync(trimmed, historySnapshot, sessionKey, cancellationToken)
                 .ConfigureAwait(false);
 
             lock (_historyLock)
@@ -148,7 +148,7 @@ public sealed class OllamaBrainService
         await _completionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var assistantText = await CompleteAssistantTurnAsync(trimmed, historySnapshot, cancellationToken)
+            var assistantText = await CompleteAssistantTurnAsync(trimmed, historySnapshot, sessionKey, cancellationToken)
                 .ConfigureAwait(false);
 
             foreach (var chunk in ChunkTextForUi(assistantText))
@@ -201,9 +201,10 @@ public sealed class OllamaBrainService
     private async Task<string> CompleteAssistantTurnAsync(
         string userMessage,
         ChatHistory historySnapshot,
+        string sessionKey,
         CancellationToken cancellationToken)
     {
-        _turnScope.BeginUserTurn();
+        _turnScope.BeginUserTurn(sessionKey);
 
         var executionSettings = CreateExecutionSettings();
         var response = await _chatCompletion
@@ -277,7 +278,13 @@ public sealed class OllamaBrainService
 
         public int ToolsInvokedThisTurn => 0;
 
-        public void BeginUserTurn()
+        public string CurrentSessionKey => JarvisChatSessionKeys.Voice;
+
+        public void BeginUserTurn(string sessionKey)
+        {
+        }
+
+        public void ResetToolsInvokedThisTurn()
         {
         }
     }

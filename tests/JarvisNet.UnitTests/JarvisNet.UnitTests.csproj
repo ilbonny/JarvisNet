@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\JarvisNet.Engine\JarvisNet.Engine.csproj" />
+    <ProjectReference Include="..\..\src\JarvisNet.Camera\JarvisNet.Camera.csproj" />
   </ItemGroup>
 
 </Project>

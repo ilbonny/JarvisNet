@@ -1,3 +1,4 @@
+using System.Text.Json;
 using JarvisNet.Camera.Options;
 using JarvisNet.Camera.Services;
 using Microsoft.AspNetCore.Builder;
@@ -10,34 +11,129 @@ namespace JarvisNet.Camera.Endpoints;
 public static class CameraMotionEndpoints
 {
     public const string MotionRoute = "/api/camera/motion";
+    public const string HeartbeatRoute = "/api/camera/heartbeat";
+    public const string DevicesRoute = "/api/devices";
+    public const string MediaRoute = "/api/camera/media/{mediaId}";
 
     public static IEndpointRouteBuilder MapJarvisNetCameraEndpoints(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapPost(MotionRoute, HandleMotionAsync)
             .DisableAntiforgery();
 
+        endpoints.MapPost(HeartbeatRoute, HandleHeartbeatAsync)
+            .DisableAntiforgery();
+
+        endpoints.MapGet(DevicesRoute, HandleGetDevices);
+
+        endpoints.MapGet(MediaRoute, HandleGetMedia);
+
         return endpoints;
+    }
+
+    private static IResult HandleGetDevices(
+        ConnectedDeviceRegistry registry,
+        IOptionsMonitor<CameraOptions> cameraOptions)
+    {
+        var options = cameraOptions.CurrentValue;
+        var devices = registry.GetSnapshots()
+            .Select(d => new
+            {
+                id = d.Id,
+                type = d.Type,
+                displayName = d.DisplayName,
+                hostLabel = d.HostLabel,
+                ipAddress = d.IpAddress,
+                firstSeenUtc = d.FirstSeenUtc,
+                lastSeenUtc = d.LastSeenUtc,
+                lastMotionUtc = d.LastMotionUtc,
+                status = d.Status,
+                isOnline = d.IsOnline,
+                isOperational = d.IsOperational,
+                motionDetectionEnabled = d.MotionDetectionEnabled,
+            });
+
+        return Results.Ok(new
+        {
+            onlineThresholdSeconds = options.DeviceOnlineSeconds,
+            devices,
+        });
+    }
+
+    private static async Task<IResult> HandleHeartbeatAsync(
+        HttpContext httpContext,
+        ConnectedDeviceRegistry registry,
+        IOptionsMonitor<CameraOptions> cameraOptions,
+        CancellationToken cancellationToken)
+    {
+        var options = cameraOptions.CurrentValue;
+        var auth = CameraDeviceAuth.ValidateIngest(httpContext, options);
+        if (auth is not null)
+        {
+            return auth;
+        }
+
+        string? type = null;
+        string? name = null;
+        string? ip = null;
+
+        if (httpContext.Request.ContentLength is > 0
+            && httpContext.Request.ContentType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            try
+            {
+                var payload = await JsonSerializer.DeserializeAsync<HeartbeatPayload>(
+                        httpContext.Request.Body,
+                        cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+                type = payload?.Type;
+                name = payload?.Name;
+                ip = payload?.Ip;
+            }
+            catch (JsonException)
+            {
+                return Results.BadRequest(new { error = "Invalid JSON body." });
+            }
+        }
+
+        registry.RecordHeartbeat(httpContext, type, name, ip);
+        var snapshots = registry.GetSnapshots();
+        var device = snapshots.FirstOrDefault(d =>
+            !string.IsNullOrWhiteSpace(name)
+                && (string.Equals(d.HostLabel, name, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(d.DisplayName, name, StringComparison.OrdinalIgnoreCase)))
+            ?? snapshots.FirstOrDefault(d =>
+                !string.IsNullOrWhiteSpace(ip)
+                    && string.Equals(d.IpAddress, ip, StringComparison.OrdinalIgnoreCase));
+
+        var motionDetectionEnabled = device?.MotionDetectionEnabled
+            ?? options.DefaultMotionDetectionEnabled;
+
+        return Results.Ok(new { status = "registered", motionDetectionEnabled });
+    }
+
+    private static IResult HandleGetMedia(string mediaId, CameraMediaCache cache)
+    {
+        var entry = cache.TryGet(mediaId);
+        if (entry is null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.File(entry.Data, entry.ContentType, entry.FileName);
     }
 
     private static async Task<IResult> HandleMotionAsync(
         HttpContext httpContext,
         CameraMotionAlertService alerts,
+        ConnectedDeviceRegistry registry,
         IOptionsMonitor<CameraOptions> cameraOptions,
         CancellationToken cancellationToken)
     {
         var options = cameraOptions.CurrentValue;
-        if (!options.Enabled)
+        var auth = CameraDeviceAuth.ValidateIngest(httpContext, options);
+        if (auth is not null)
         {
-            return Results.Json(new { error = "Camera ingest disabled." }, statusCode: StatusCodes.Status503ServiceUnavailable);
-        }
-
-        if (options.IsIngestProtected)
-        {
-            if (!httpContext.Request.Headers.TryGetValue("X-Api-Key", out var provided)
-                || provided != options.IngestApiKey)
-            {
-                return Results.Unauthorized();
-            }
+            return auth;
         }
 
         var (stream, fileName) = await TryReadImageAsync(httpContext.Request, cancellationToken).ConfigureAwait(false);
@@ -59,9 +155,14 @@ public static class CameraMotionEndpoints
                     cancellationToken)
                 .ConfigureAwait(false);
 
+            var cooldown = error?.Contains("Cooldown", StringComparison.OrdinalIgnoreCase) == true;
+            registry.RecordMotion(
+                httpContext,
+                accepted ? true : cooldown ? null : false);
+
             if (!accepted)
             {
-                var status = error?.Contains("Cooldown", StringComparison.OrdinalIgnoreCase) == true
+                var status = cooldown
                     ? StatusCodes.Status429TooManyRequests
                     : StatusCodes.Status503ServiceUnavailable;
                 return Results.Json(new { error }, statusCode: status);
@@ -106,5 +207,14 @@ public static class CameraMotionEndpoints
         }
 
         return (null, "motion.jpg");
+    }
+
+    private sealed class HeartbeatPayload
+    {
+        public string? Type { get; set; }
+
+        public string? Name { get; set; }
+
+        public string? Ip { get; set; }
     }
 }

@@ -5,7 +5,11 @@ namespace JarvisNet.Plugins.Sdk.Abstractions;
 /// </summary>
 public interface IJarvisTurnScope
 {
-    void BeginUserTurn();
+    void BeginUserTurn(string sessionKey);
+
+    void ResetToolsInvokedThisTurn();
+
+    string CurrentSessionKey { get; }
 
     int ToolsInvokedThisTurn { get; }
 }
